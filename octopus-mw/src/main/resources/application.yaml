@@ -1,0 +1,39 @@
+dubbo:
+  application:
+    name: mw
+  protocol:
+    name: dubbo
+    port: 7171
+  registry:
+    address: nacos://172.31.238.116:8848
+    #address: zookeeper://${zookeeper.address:127.0.0.1}:2181
+    #address: zookeeper://${zookeeper.address:43.136.22.7}:2181
+  consumer:
+    timeout: 10000
+    retries: 0
+server:
+  port: 8084
+  servlet:
+    context-path: /v1
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://39.108.187.149:3306/rspdatadb
+    username: rsp
+    password: rsp123456
+
+# Hikari 连接池配置
+hikari:
+  minimum-idle: 3  # 最小空闲连接数量
+  maximum-pool-size: 5  # 连接池最大连接数，默认是10
+  max-lifetime: 1800000  # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+  connection-test-query: SELECT 1
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.szubd.rsp.pojo
+  configuration:
+    map-underscore-to-camel-case: true
+
+#debug: true

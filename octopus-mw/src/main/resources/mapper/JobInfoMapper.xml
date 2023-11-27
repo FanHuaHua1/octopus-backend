@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.job.JobInfoMapper">
+    <select id="listAllJobInfo" resultType="com.szubd.rsp.job.JobInfo">
+        select * from jobinfos
+    </select>
+
+    <insert id="insertJobInfo" useGeneratedKeys="true" keyProperty="jobId" parameterType="com.szubd.rsp.job.JobInfo">
+        insert into
+            jobinfos (job_id, job_name, job_status, job_start_time, job_end_time, job_type, sub_job_num, parent_job_id, running_host, args, algo_args)
+        values
+            (#{jobId}, #{jobName}, #{jobStatus}, #{jobStartTime}, #{jobEndTime}, #{jobType}, #{subJobNum}, #{parentJobId}, #{runningHost}, #{argsJsonString}, #{algoArgsJsonString})
+    </insert>
+
+    <update id="updateJobInfo" parameterType="com.szubd.rsp.job.JobInfo">
+        update jobinfos
+        <set>
+            job_status = #{jobStatus}, job_end_time = #{jobEndTime}, running_host = #{runningHost}, args = #{argsJsonString}, algo_args = #{algoArgsJsonString}
+        </set>
+        where job_id = #{jobId}
+    </update>
+
+    <select id="getAvaliableJobId" resultType="java.lang.Integer">
+        select max(job_id) from jobinfos
+    </select>
+
+</mapper>

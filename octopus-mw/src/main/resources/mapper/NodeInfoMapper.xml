@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.node.NodeInfoMapper">
+    <select id="queryForNodeId" resultType="java.lang.Integer">
+        select id from nodeinfos where ip = #{ip} limit 1
+    </select>
+
+    <select id="queryForNodeInfoById" resultType="com.szubd.rsp.node.NodeInfo">
+        select * from nodeinfos where id = #{id} limit 1
+    </select>
+
+    <insert id="insertNewNode" useGeneratedKeys="true" keyProperty="id" parameterType="com.szubd.rsp.node.NodeInfo">
+        insert into nodeinfos (ip, prefix, namenode_ip, cluster_name) values (#{ip}, #{prefix}, #{nameNodeIP}, #{clusterName})
+    </insert>
+
+    <update id="updateNodeInfo" parameterType="com.szubd.rsp.node.NodeInfo">
+        update nodeinfos
+        <set>
+            namenode_ip = #{nameNodeIP},
+            cluster_name = #{clusterName}
+        </set>
+        where ip = #{ip}
+    </update>
+
+    <select id="queryForNodeInfoByIp" resultType="com.szubd.rsp.node.NodeInfo">
+        select * from nodeinfos where ip = #{ip} limit 1
+    </select>
+
+   <!-- <select id="queryForNode_RmHostIp" resultType="com.szubd.rsp.node.NodeInfo">
+        select * from nodeinfos
+    </select> -->
+</mapper>

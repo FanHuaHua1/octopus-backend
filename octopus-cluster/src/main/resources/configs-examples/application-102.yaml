@@ -1,0 +1,56 @@
+dubbo:
+  application:
+    name: cluster
+  protocol:
+    name: dubbo
+    port: 20880
+    host: 172.31.238.102
+  registry:
+    address: nacos://172.31.238.116:8848
+    #address: zookeeper://${zookeeper.address:172.31.226.92}:2181
+  consumer:
+    timeout: 10000
+server:
+  port: 8083
+hdfs:
+  url: hdfs://172.31.238.102:8020
+  #url: hdfs://172.31.238.21:8020
+  prefix:
+    general: /user/zhaolingxiang/rspmanager/
+    origin: /user/zhaolingxiang/rspmanager/origin/
+    localrsp: /user/zhaolingxiang/rspmanager/localrsp/
+    globalrsp: /user/zhaolingxiang/rspmanager/globalrsp/
+    tmp: /user/zhaolingxiang/rspmanager/tmp/
+    algo: /user/zhaolingxiang/rspmanager/algo/
+yarn:
+  rm: http://172.31.238.102:8088
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://172.31.238.97:3306/rspm?allowMultiQueries=true&useSSL=false
+    username: rspm
+    password: 123456
+#    url: jdbc:mysql://172.31.238.21:3306/rspm?allowMultiQueries=true&useSSL=false
+#    username: root
+#    password: 123456
+  task:
+    scheduling:
+      pool:
+        size: 10
+      thread-name-prefix: ServiceTimeTask
+    execution:
+      shutdown:
+        #        线程关闭时是否等所有任务结束
+        await-termination: false
+        #        线程最大的等待时间，防止线程陷入循环关不掉
+        await-termination-period: 10s
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.szubd.rsp.pojo
+  configuration:
+    map-underscore-to-camel-case: true
+spark-info:
+  clusterConfig:
+    clusterName: "Adam"
+    yarnResourceManager: "172.31.238.102:8088"
+    sparkHistoryServer: "172.31.238.105:18088"

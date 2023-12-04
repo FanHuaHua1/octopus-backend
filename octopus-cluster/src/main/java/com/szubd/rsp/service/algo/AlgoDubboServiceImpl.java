@@ -4,8 +4,10 @@ import com.szubd.rsp.algo.AlgoDubboService;
 import com.szubd.rsp.constants.JobConstant;
 import com.szubd.rsp.constants.RSPConstant;
 import com.szubd.rsp.integration.IntegrationDubboService;
+import com.szubd.rsp.job.JobDubboLogoService;
 import com.szubd.rsp.job.JobDubboService;
 import com.szubd.rsp.job.JobInfo;
+import com.szubd.rsp.job.JobLogoInfo;
 import com.szubd.rsp.service.job.JobUtils;
 import com.szubd.rsp.tools.IntegrationUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +37,9 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
     private RSPConstant constant;
     @Autowired
     private JobConstant jobConstant;
+
+    @DubboReference
+    private JobDubboLogoService jobDubboLogoService;
     @DubboReference
     private IntegrationDubboService integrationDubboService;
     @DubboReference
@@ -142,21 +147,64 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
                        int executorCores,
                        String... args) {
             logger.info("正在发起调用算法执行调用");
+        JobLogoInfo jobInfo = new JobLogoInfo(3, algoName, "RUNNING");
+
+        jobInfo.setExecutorArgs(executorNum,executorCores,executorMemory);
+//        jobInfo.addArgs("trainRatio", String.valueOf(trainRatio));
+//        jobInfo.addArgs("testRatio", String.valueOf(testRatio));
+//        jobInfo.addArgs("algoType", algoType);
+//        jobInfo.addArgs("algoSubSetting", algoSubSetting);
+//        jobInfo.addArgs("ip", Inet4Address.getLocalHost().getHostAddress());
+
+        int jobId = jobDubboLogoService.createJob(jobInfo);
             try {
                 String path = constant.url + constant.modelPrefix + UUID.randomUUID();
-                SparkAppHandle handler = getCorrespondingLauncher(algoType, algoSubSetting, algoName, filename, path, "false", "-1", "-1", "-1", " ")
+
+                System.out.println(executorCores+executorNum+executorMemory);
+
+//        double trainRatio = logoAlgoInfos.trainRatio;
+//        double testRatio = logoAlgoInfos.testRatio;
+
+
+                SparkAppHandle handler = getCorrespondingLauncher(algoType, algoSubSetting, algoName, filename, path, "false",
+                        String.valueOf(executorNum), String.valueOf(executorMemory), String.valueOf(executorCores), " ")
                     .startApplication(new SparkAppHandle.Listener(){
                         @Override
                         public void stateChanged(SparkAppHandle handle) {
+//                            System.out.println(handler.getState());
+                            if(handle.getState().isFinal()){
+                                String yarnLogUrl = "";
+                                String yarnLog = "";
+                                try {
+                                    yarnLogUrl = JobUtils.getYarnLogUrl(jobConstant.rmUrl, handle.getAppId());
+                                    yarnLog = JobUtils.getYarnLog(yarnLogUrl);
+                                } catch (IOException e) {
+                                    logger.warn("yarn logurl is null.");
+                                }
+                                logger.info("fetched logurl: {}", yarnLogUrl);
+                            }
+                            else if (Objects.equals(handle.getState().toString(), "SUBMITTED")) {
+                                String sparkJobId = handle.getAppId();
+                                if(sparkJobId != null && !sparkJobId.isEmpty()){
+                                    jobDubboLogoService.updateJobArgs(jobId ,"Spark任务ID", sparkJobId);
+                                }
+                            }
+                            jobDubboLogoService.updateJobStatus(jobId,handle.getState().toString());
+                            jobDubboLogoService.syncInDB(jobId);
                         }
                         @Override
                         public void infoChanged(SparkAppHandle handle) {
                             logger.info("Spark Job Info: {}", handle.getState().toString());
+
                         }
                     });
+                System.out.println(handler.getState());
             } catch (IOException e) {
+//                job执行失败
+                jobDubboLogoService.endJob(jobId,"FAILED");
                 throw new RuntimeException(e);
             }
+
             logger.info("等待算法调用结束");
     }
 

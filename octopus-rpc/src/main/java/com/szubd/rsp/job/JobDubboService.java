@@ -16,4 +16,11 @@ public interface JobDubboService {
     int endSubJob(int mvJobId, String jobStatus);
 
     int syncInDB(int jobId);
+
+    void createOrUpdateJobCountDown(int jobId, int count);
+
+    void reduceJobCountDown(int jobId);
+
+    int getJobCountDown(int jobId);
+
 }

@@ -26,6 +26,7 @@ public class JobService implements JobDubboService {
     private int jobId = 0;
     private HashMap<Integer, JobInfo> jobInfoHashMap = new HashMap<>();
     private HashMap<Integer, JobInfo> endMap = new HashMap<>();
+    private HashMap<Integer, Integer> countDownMap = new HashMap<>();
     private SimpleDateFormat dateFormat= new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     protected final static Logger logger = LoggerFactory.getLogger(JobService.class);
     @Autowired
@@ -154,4 +155,20 @@ public class JobService implements JobDubboService {
         jobId = jobInfoMapper.getAvaliableJobId() + 1;
         logger.info("当前JobId：{}", jobId);
     }
+
+    @Override
+    public synchronized void createOrUpdateJobCountDown(int jobId, int count){
+        countDownMap.put(jobId, count);
+    }
+
+    @Override
+    public synchronized void reduceJobCountDown(int jobId){
+        int count = countDownMap.get(jobId);
+        countDownMap.put(jobId, count - 1);
+    }
+    @Override
+    public synchronized int getJobCountDown(int jobId){
+        return countDownMap.get(jobId);
+    }
+
 }

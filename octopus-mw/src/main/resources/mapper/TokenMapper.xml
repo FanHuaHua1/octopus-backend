@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.mapper.TokenMapper">
+
+    <resultMap id="TokenMap" type="com.szubd.rsp.pojo.userPojo.Token">
+        <id column="ID" property="id" />
+        <result column="USER_ID" property="userId" />
+        <result column="TOKEN" property="token" />
+        <result column="CREATED_TIME" property="createdTime" />
+        <result column="EXPIRED_TIME" property="expiredTime" />
+    </resultMap>
+
+    <sql id="ALL_COLUMNS">
+        ID, USER_ID, TOKEN, CREATED_TIME, EXPIRED_TIME
+    </sql>
+
+    <sql id="INSERT_COLUMN">
+        USER_ID, TOKEN, CREATED_TIME, EXPIRED_TIME
+    </sql>
+
+    <insert id="insertToken">
+        insert into USER_LOGIN_TOKEN(<include refid="INSERT_COLUMN"/>)
+        values(#{userId}, #{token}, #{insertTime}, #{expiredTime})
+    </insert>
+
+    <select id="queryTokenByUserId" resultMap="TokenMap">
+        select <include refid="ALL_COLUMNS"></include>
+        from USER_LOGIN_TOKEN
+        where USER_ID = #{userId}
+    </select>
+
+    <delete id="deleteExpiredToken">
+        delete from USER_LOGIN_TOKEN
+        where EXPIRED_TIME <![CDATA[ < ]]> CURRENT_TIMESTAMP
+    </delete>
+
+    <delete id="deleteTokenByUserId">
+        delete from USER_LOGIN_TOKEN
+        where USER_ID = #{userId}
+    </delete>
+
+    <update id="refreshExpiredTimeByUserId">
+        update USER_LOGIN_TOKEN
+        set EXPIRED_TIME = (TIME_TO_SEC(CURRENT_TIMESTAMP) + 3600)
+    </update>
+
+</mapper>

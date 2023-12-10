@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.mapper.UserAlgoMapper">
+
+    <resultMap id="AlgoInfo" type="com.szubd.rsp.pojo.algoPojo.AlgorithmInfo">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="params" property="params"/>
+        <result column="type" property="type"/>
+        <result column="algo_permission" property="algoPermission"/>
+    </resultMap>
+
+    <sql id="ALGO_INFO_COLUMNS">
+        id, `name`, params, type, algo_permission
+    </sql>
+
+    <select id="getAlgorithmById" resultMap="AlgoInfo">
+        select <include refid="ALGO_INFO_COLUMNS"/>
+        from algoinfos
+        <where>
+            id = #{algoId}
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.mapper.UserResourceMapper">
+
+    <resultMap id="UserResource" type="com.szubd.rsp.pojo.resourcePojo.UserResource">
+        <id column="ID" property="id"/>
+        <result column="USER_ID" property="userId"/>
+        <result column="MEMORY" property="memory"/>
+        <result column="CPU" property="cpu"/>
+        <result column="HARD_DISK" property="hardDisk"/>
+    </resultMap>
+
+    <sql id="BASE_RESOURCE">
+        `MEMORY`, `CPU`, HARD_DISK
+    </sql>
+
+    <select id="queryUserResourceByUserId" resultMap="UserResource">
+        select USER_ID, <include refid="BASE_RESOURCE"/>
+             from USERS_RESOURCE
+             <where>
+                 USER_ID=#{userID}
+             </where>
+    </select>
+
+    <insert id="insertNewUserResource" parameterType="com.szubd.rsp.pojo.resourcePojo.UserResource">
+        insert into USERS_RESOURCE(USER_ID, <include refid="BASE_RESOURCE"/>, CREATED_TIME)
+        values (#{userId},
+                #{memory},
+                #{cpu},
+                #{hardDisk},
+                CURRENT_TIMESTAMP)
+    </insert>
+
+    <update id="updateByUserId" parameterType="com.szubd.rsp.pojo.resourcePojo.UserResource">
+        update USERS_RESOURCE set
+                                  MEMORY = #{memory},
+                                  CPU = #{cpu},
+                                  CORES = #{cores},
+                                  HARD_DISK = #{hardDisk}
+        where USER_ID = #{userId}
+    </update>
+
+</mapper>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.user.UserInfoMapper">
+
+    <sql id="USER_AUTH_QUERY">
+        ID, USER_ID, USER_PASSWORD
+    </sql>
+
+    <sql id="USER_INFO">
+        ID, USER_ID, USER_NAME, EMAIL, WX_ID, USER_PRIVILEGE
+    </sql>
+
+    <resultMap id="userInfoMap" type="com.szubd.rsp.user.UserInfo">
+        <!-- 前一个对应表中名字，后一个对应SQL语句的属性 -->
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="user_name" property="userName" />
+        <result column="user_password" property="userPassword" />
+        <result column="email" property="email" />
+        <result column="wx_id" property="wxId" />
+    </resultMap>
+
+    <select id="checkUserPassword" resultType="boolean">
+        select count(*)
+        from USERS_PRI
+        where user_id = #{userId} and user_password = #{userPassword}
+    </select>
+
+    <select id="queryUserByUserId" resultMap="userInfoMap">
+        select <include refid="USER_INFO"/>
+        from USERS_PRI where user_id = #{userId}
+    </select>
+
+    <sql id="register_params">
+        USER_ID, USER_NAME, USER_PASSWORD, EMAIL, WX_ID, USER_PRIVILEGE
+    </sql>
+
+
+    <insert id="registerUser" useGeneratedKeys="true" keyProperty="id">
+        insert into USERS_PRI(<include refid="register_params"/>, CREATED_TIME)
+        values (#{userId}, #{userName}, #{userPassword}, #{email}, #{wxId}, #{userPrivilege}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <update id="updateUser">
+        update USERS_PRI
+        <set>
+            <if test="userName != null">
+                USER_NAME = #{userName},
+            </if>
+
+            <if test="userPassword != null">
+                USER_PASSWORD = #{userPassword},
+            </if>
+
+            <if test="email != null">
+                EMAIL = #{email},
+            </if>
+
+            <if test="wxId != null">
+                WX_ID = #{wxId},
+            </if>
+
+            <if test="userPrivileges != null">
+                USER_PRIVILEGES = #{userPrivileges},
+            </if>
+        </set>
+
+    </update>
+
+</mapper>

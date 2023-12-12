@@ -30,6 +30,8 @@ public class JobInfoController {
     @Autowired
     private JobService jobService;
     @Autowired
+    private JobLogoService jobLogoService;
+    @Autowired
     private JdbcTemplate template;
     @Autowired
     private WebSocketServer webSocketServer;
@@ -89,5 +91,6 @@ public class JobInfoController {
     private void warmConnectionPool() throws SQLException {
         template.getDataSource().getConnection();
         jobService.initJobId();
+        jobLogoService.initJobId();
     }
 }

@@ -37,3 +37,6 @@ mybatis:
     map-underscore-to-camel-case: true
 
 #debug: true
+# token 过期配置
+token:
+  expiredHour: 4

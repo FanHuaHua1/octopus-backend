@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.user.LogMapper">
+
+    <resultMap id="LoginLog" type="com.szubd.rsp.user.LoginLog">
+        <id column="ID" property="id"/>
+        <result column="LOGIN_USER_ID" property="loginUserId" />
+        <result column="LOGIN_TIME" property="loginTime" />
+        <result column="LOGIN_STATUS" property="loginStatus" />
+        <result column="ERR_COMMENT" property="errComment" />
+    </resultMap>
+
+    <sql id="QUERY_COLUMN">
+        ID, LOGIN_USER_ID, LOGIN_TIME, LOGIN_STATUS, ERR_COMMENT
+    </sql>
+
+    <sql id="INSERT_SUCCESS_COLUMNS">
+        LOGIN_USER_ID, LOGIN_TIME, LOGIN_STATUS
+    </sql>
+
+    <sql id="INSERT_ERROR_COLUMNS">
+        LOGIN_USER_ID, LOGIN_TIME, LOGIN_STATUS, ERR_COMMENT
+    </sql>
+
+    <insert id="loginSuccessLog">
+        insert into LOGIN_LOG(<include refid="INSERT_SUCCESS_COLUMNS" />)
+        values (#{userId}, CURRENT_TIMESTAMP, "0")
+    </insert>
+
+    <insert id="loginErrorLog">
+        insert into LOGIN_LOG(<include refid="INSERT_ERROR_COLUMNS" />)
+        values (#{userId}, CURRENT_TIMESTAMP, "1", #{errComment})
+    </insert>
+
+    <select id="queryByUserId" resultMap="LoginLog">
+        select <include refid="QUERY_COLUMN" />
+        from LOGIN_LOG
+        where LOGIN_USER_ID = #{userId}
+    </select>
+</mapper>

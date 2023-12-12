@@ -9,6 +9,7 @@ import com.szubd.rsp.algo.AlgoInfo;
 import com.szubd.rsp.file.GlobalRSPInfo;
 import com.szubd.rsp.http.Result;
 import com.szubd.rsp.http.ResultResponse;
+import com.szubd.rsp.service.job.JobLogoService;
 import com.szubd.rsp.service.node.NacosService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -36,6 +37,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static com.szubd.rsp.http.ResultCode.PARAMS_IS_INVALID;
+import static java.lang.Math.max;
+
 @Controller
 @Slf4j
 @RequestMapping("/algo")
@@ -43,6 +47,8 @@ public class AlgoController {
 
     @Autowired
     private AlgoService algoService;
+    @Autowired
+    private JobLogoService jobLogoService;
 
     private static final Logger logger = LoggerFactory.getLogger(AlgoController.class);
 
@@ -179,13 +185,36 @@ public class AlgoController {
         return ResultResponse.success("OK");
     }
 
+//    资源验证
+//    @ResponseBody
+//    @PostMapping("/checkresourceslogo")
+//    public Result checkResourcesLogo(@RequestBody JSONObject jsonObject) throws Exception{
+//
+//        int memory = max(jsonObject.getIntValue("sparkExecutorMemory"),2);
+//        int cores = max(jsonObject.getIntValue("sparkExecutorCores"),2);
+//        int executorNum = max(jsonObject.getIntValue("sparkDynamicAllocationMaxExecutors"),2);
+//        int nodeId = jsonObject.getIntValue("nodeId");
+////        System.out.println(jsonObject.toJSONString());
+////        System.out.println(executorNum);
+//        boolean valid = jobLogoService.isValid(cores,
+//                executorNum,
+//                memory,
+//                nodeId);
+//        if(valid) {
+//            return ResultResponse.success("OK");
+//        } else {
+//            return ResultResponse.failure(PARAMS_IS_INVALID, "资源不足，请耐心等待");
+////            return ResultResponse.success("资源不足，请耐心等待");
+//        }
+//    }
     @ResponseBody
     @PostMapping("/submitlogo")
     public Result checkFilesLogo(@RequestBody JSONObject jsonObject) throws Exception {
+        String userId = jsonObject.getString("userId");
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         LogoAlgoInfos logoAlgoInfos = mapper.readValue(jsonObject.toJSONString(), LogoAlgoInfos.class);
-        //System.out.println(logoAlgoInfos);
+//        System.out.println(logoAlgoInfos);
         String algoType = "";
         String algoSubSetting = "";
         switch(logoAlgoInfos.algo){
@@ -236,7 +265,28 @@ public class AlgoController {
             }
         }
         Map<String, String> map = (Map<String, String>) JSON.parse(logoAlgoInfos.algoParams);
-        algoService.submitLogo(logoAlgoInfos, algoType, algoSubSetting, map);
+        //校验
+//        System.out.println(logoAlgoInfos.toString());
+        //空参给默认值
+        if(logoAlgoInfos.getSparkDynamicAllocationMaxExecutors() == 0)
+            logoAlgoInfos.setSparkDynamicAllocationMaxExecutors(2);
+        if(logoAlgoInfos.getSparkExecutorCores() == 0)
+            logoAlgoInfos.setSparkExecutorCores(2);
+        if(logoAlgoInfos.getSparkExecutorMemory() == 0)
+            logoAlgoInfos.setSparkExecutorMemory(2);
+//        boolean valid = jobLogoService.isValid(logoAlgoInfos.getSparkExecutorCores(),
+//                logoAlgoInfos.getSparkDynamicAllocationMaxExecutors(),
+//                logoAlgoInfos.getSparkExecutorMemory(),
+//                logoAlgoInfos.getNodeId());
+//        if(valid) {
+//
+//            algoService.submitLogo(logoAlgoInfos, algoType, algoSubSetting, map);
+//            return ResultResponse.success("OK");
+//        } else {
+//            return ResultResponse.failure(PARAMS_IS_INVALID, "资源不足，请耐心等待");
+////            return ResultResponse.success("资源不足，请耐心等待");
+//        }
+        algoService.submitLogo(userId, logoAlgoInfos, algoType, algoSubSetting, map);
         return ResultResponse.success("OK");
     }
 

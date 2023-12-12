@@ -205,7 +205,20 @@ public class RSPDubboService implements OperationDubboService {
     }
 
     @Async("taskExecutor")
-    private int distcp(List<String> srcPaths, String dst) {
+    @Override
+    public void distcpBeforeMix(List<String> fileList, String father, int jobId, int fatherJobId) {
+        String dst = constant.url + constant.logPrefix + father;
+        String savePath = constant.url + constant.globalRspPrefix + father.split("-")[0] + "/" + father;
+        jobDubboService.updateJobArgs(jobId, "目的目录", dst);
+        jobDubboService.updateJobStatus(jobId, "RUNNING");
+        jobDubboService.syncInDB(jobId);
+        distcp(fileList, dst);
+        jobDubboService.reduceJobCountDown(fatherJobId);
+        jobDubboService.endJob(jobId, "FINISHED");
+    }
+
+    @Async("taskExecutor")
+    public int distcp(List<String> srcPaths, String dst) {
         try {
             Stream<Path> pathStream = srcPaths.stream().map(string -> new Path(string));
             List<Path> srcPathsList = pathStream.collect(Collectors.toList());
@@ -229,7 +242,64 @@ public class RSPDubboService implements OperationDubboService {
         return -1;
     }
 
-
+    @Async("taskExecutor")
+    @Override
+    public void rspMerge(List<List<String>> fileList, String father, int jobId, int repartitionNum, String mixType) throws Exception {
+        String dst = constant.url + constant.logPrefix + father;
+        String savePath = constant.url + constant.globalRspPrefix + father.split("-")[0] + "/" + father;
+        String host;
+        try {
+            host = new URI(constant.url).getHost();
+        } catch (URISyntaxException e) {
+            host = "wrong";
+        }
+        JobInfo mergeJobInfo = new JobInfo(1, "merge", "RUNNING", host, jobId);
+        int mergeJobId = jobDubboService.createJob(mergeJobInfo);
+        //List<String> collect = fileList.stream().map(
+        List<String> collect = fileList.stream().map(
+                list -> {
+                    List<String> collect1 = list.stream().map(
+                            s -> s.lastIndexOf("/") == -1 ? s : s.substring(s.lastIndexOf("/") + 1)
+                    ).collect(Collectors.toList());
+                    String join = StringUtils.join(",", collect1);
+                    return join;
+                }
+        ).collect(Collectors.toList());
+        String args = StringUtils.join(":", collect);
+        jobDubboService.updateJobArgs(mergeJobId, "文件临时目录", dst);
+        jobDubboService.syncInDB(mergeJobId);
+        try {
+                mergeRSP(dst, args, repartitionNum, mixType);
+                jobDubboService.endJob(mergeJobId, "FINISHED");
+            } catch (Exception e) {
+                jobDubboService.endJob(mergeJobId, "FAILED");
+                throw new RuntimeException(e);
+            }
+            String hostx;
+            try {
+                hostx = new URI(constant.url).getHost();
+            } catch (URISyntaxException e) {
+                hostx = "wrong";
+            }
+            JobInfo mvJobInfo = new JobInfo(1, "moveFile", "RUNNNIG", hostx, jobId);
+            mvJobInfo.addArgs("源路径", dst);
+            mvJobInfo.addArgs("目的路径", savePath);
+            int mvJobId = jobDubboService.createJob(mvJobInfo);
+            try {
+                mvTmpFile(dst, savePath);
+                jobDubboService.updateJobStatus(mvJobId, "FINISHED");
+            } catch (URISyntaxException e) {
+                jobDubboService.updateJobStatus(mvJobId, "FAILED");
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                jobDubboService.updateJobStatus(mvJobId, "FAILED");
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                jobDubboService.updateJobStatus(mvJobId, "FAILED");
+                throw new RuntimeException(e);
+            }
+            jobDubboService.endSubJob(mvJobId, "FINISHED");
+    }
 //    private int distcp2(List<List<String>> groupPaths, List<String> srcPaths, String dst) {
 //        try {
 //            Stream<Path> pathStream = srcPaths.stream().map(string -> new Path(string));

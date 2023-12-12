@@ -64,7 +64,8 @@ public class RSPInfoController {
         RspMixParams rspMixParams = mapper.readValue(jsonObject.toJSONString(), RspMixParams.class);
         logger.info("RSP混洗参数： {}", rspMixParams);
         if (rspMixParams.data.size() != 0){
-            rspService.rspMixAction(rspMixParams);
+            //rspService.rspMixAction(rspMixParams);
+            rspService.rspMixActionWithStrategy(rspMixParams);
         }
         return ResultResponse.success();
     }

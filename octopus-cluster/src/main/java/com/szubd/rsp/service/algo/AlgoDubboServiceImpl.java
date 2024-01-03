@@ -6,21 +6,18 @@ import com.szubd.rsp.constants.RSPConstant;
 import com.szubd.rsp.integration.IntegrationDubboService;
 import com.szubd.rsp.job.JobDubboService;
 import com.szubd.rsp.job.JobInfo;
-import com.szubd.rsp.service.job.JobUtils;
+import com.szubd.rsp.tools.JobUtils;
 import com.szubd.rsp.tools.IntegrationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.apache.spark.launcher.SparkAppHandle;
 import org.apache.spark.launcher.SparkLauncher;
-import org.apache.spark.rdd.RDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import scala.reflect.ClassTag;
-import smile.classification.DecisionTree;
 
 import java.io.IOException;
 import java.net.URI;
@@ -55,20 +52,8 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
             logger.info(Thread.currentThread().getName() + ": 正在发起调用算法执行调用");
             logger.info("当前线程池任务数: {}", Thread.currentThread().getName());
             logger.info("任务信息：{}", jobId + ", " + algoType + ", " + algoSubSetting + ", " + algoName + ", " + filename + ", " + executorNum + ", " + executorMemory + ", " + executorCores + ", 其他参数: " + String.join(",", args));
-            String host;
-            try {
-                host = new URI(constant.url).getHost();
-            } catch (URISyntaxException e) {
-                host = "wrong";
-            }
-            JobInfo subAlgoJobInfo = new JobInfo(1, "algo", "RUNNING" , host, jobId);
+            JobInfo subAlgoJobInfo = new JobInfo(1, "algo", "RUNNING" , constant.ip, jobId);
             int subAlgoJobId = jobDubboService.createJob(subAlgoJobInfo);
-            jobDubboService.updateJobArgs(subAlgoJobId, "数据集", filename);
-            try {
-                jobDubboService.updateJobArgs(subAlgoJobId, "ip", new URI(constant.url).getHost());
-            } catch (URISyntaxException e) {
-                jobDubboService.updateJobArgs(subAlgoJobId, "ip", "wrong");
-            }
             jobDubboService.syncInDB(subAlgoJobId);
             try {
                 String path = constant.url + constant.modelPrefix + UUID.randomUUID();
@@ -88,24 +73,24 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
                         @Override
                         public void stateChanged(SparkAppHandle handle) {
                             if (handle.getState().isFinal()) {
-                               String yarnLogUrl = "";
-                               String yarnLog = "";
+                                String yarnLog = null;
                                 try {
-                                    yarnLogUrl = JobUtils.getYarnLogUrl(jobConstant.rmUrl, handle.getAppId());
-                                    yarnLog = JobUtils.getYarnLog(yarnLogUrl);
+                                    yarnLog = JobUtils.getYarnLog(jobConstant.rmUrl, handle.getAppId());
                                 } catch (IOException e) {
-                                    logger.warn("yarn logurl is null.");
+                                    throw new RuntimeException(e);
                                 }
-                                logger.info("fetched logurl: {}", yarnLogUrl);
-                                //TODO 暂时只是写成直接获取日志的方式，后续需要改成通过yarn的rest api获取
-                                //jobDubboService.updateJobArgs(subAlgoJobId, "日志", yarnLogUrl);
-                                //禁止输出长log
-                                jobDubboService.updateJobArgs(subAlgoJobId, "日志", yarnLog);
-                                jobDubboService.updateJobArgs(subAlgoJobId, "LO耗时", (System.nanoTime() - startTime) * 0.000000001 + "s");
+                                long loTimeConsuming = System.nanoTime() - startTime;
                                 long modelsTransferStartTime = System.nanoTime();
                                 Object models = IntegrationUtils.getModels(path, algoType, algoName);
                                 integrationDubboService.recordModels(subAlgoJobId, models);
-                                jobDubboService.updateJobArgs(subAlgoJobId, "传输模型耗时", (System.nanoTime() - modelsTransferStartTime) * 0.000000001 + "s");
+                                //禁止输出长log
+                                jobDubboService.updateMultiJobArgs(subAlgoJobId,
+                                        "数据集", filename,
+                                        "日志", yarnLog,
+                                        "ip", constant.ip,
+                                        "loTimeConsuming", loTimeConsuming * 0.000000001 + "s",
+                                        "modelsTransferTimeConsuming", (System.nanoTime() - modelsTransferStartTime) * 0.000000001 + "s"
+                                );
                                 jobDubboService.endSubJob(subAlgoJobId, handle.getState().toString());
                                 integrationDubboService.checkAndIntegrate(subAlgoJobId, algoType, algoName, args);
                                return;
@@ -188,7 +173,7 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
                 .setConf("spark.dynamicAllocation.minExecutors", "1")
                 .setConf("spark.dynamicAllocation.enabled", "true")
                 .setConf("spark.shuffle.service.enabled", "true")
-                .setConf("spark.metrics.conf", "/opt/cloudera/parcels/CDH/lib/spark/conf/metrics.properties")
+                .setConf("spark.metrics.conf", "/opt/cloudera/parcels/CDH-6.3.2-1.cdh6.3.2.p0.1605554/etc/spark/metrics.properties")
                 //.setConf("spark.metrics.conf", "hdfs:///172.31.238.102:8080/user/zhaolingxiang/metrics.properties")
 //                .setConf(SparkLauncher.DRIVER_EXTRA_CLASSPATH,constant.url + "/user/zhaolingxiang/rspmanager/algo/spark-rsp_2.11-2.4.0.jar")
 //                .setConf(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH,constant.url + "/user/zhaolingxiang/rspmanager/algo/spark-rsp_2.11-2.4.0.jar")

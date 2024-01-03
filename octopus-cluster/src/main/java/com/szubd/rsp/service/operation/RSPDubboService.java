@@ -49,7 +49,7 @@ public class RSPDubboService implements OperationDubboService {
 //            .setConf("spark.executor.cores", "2")
             .setConf("spark.eventLog.enabled", "true")
             .setConf("spark.eventLog.dir", constant.url + "/user/spark/applicationHistory")
-            .setAppResource(constant.url + "/user/zhaolingxiang/rspmanager/app/octopus-core-1.0-SNAPSHOT-jar-with-dependencies.jar")
+            .setAppResource(constant.url + constant.app + "octopus-core-1.0-SNAPSHOT-jar-with-dependencies.jar")
 //            .setConf(SparkLauncher.DRIVER_EXTRA_CLASSPATH,constant.url + "/user/zhaolingxiang/rspmanager/algo/spark-rsp_2.11-2.4.0.jar")
 //            .setConf(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH,constant.url + "/user/zhaolingxiang/rspmanager/algo/spark-rsp_2.11-2.4.0.jar")
 //            .setConf(SparkLauncher.DRIVER_EXTRA_CLASSPATH,"./spark-rsp_2.11-2.4.0.jar")
@@ -64,7 +64,7 @@ public class RSPDubboService implements OperationDubboService {
                        jobDubboService.endJob(jobId, handle.getState().toString());
                        if(handle.getState() == SparkAppHandle.State.FINISHED){
                            try {
-                               constant.getSuperFileSystem().setOwner(new Path(constant.localRspPrefix + targetName), "zhaolingxiang", "zhaolingxiang");
+                               constant.getSuperFileSystem().setOwner(new Path(constant.localRspPrefix + targetName), constant.user, constant.user);
                            } catch (URISyntaxException e) {
                                throw new RuntimeException(e);
                            } catch (IOException e) {
@@ -102,8 +102,7 @@ public class RSPDubboService implements OperationDubboService {
 //            .setConf("spark.executor.cores", "2")
             .setConf("spark.eventLog.enabled", "true")
             //.setConf("spark.eventLog.dir", "hdfs://nameservice1/user/spark/applicationHistory")
-                //TODO:前缀改成配置文件
-            .setAppResource(constant.url + "/user/zhaolingxiang/rspmanager/app/octopus-core-1.0-SNAPSHOT-jar-with-dependencies.jar")
+            .setAppResource(constant.url + constant.app + "octopus-core-1.0-SNAPSHOT-jar-with-dependencies.jar")
             .setMainClass("com.szubd.rsp.MergeRSP")
             .addAppArgs(tmpPath, fileList, repartitionNum + "" ,mixType)
             .setDeployMode("cluster")
@@ -136,6 +135,73 @@ public class RSPDubboService implements OperationDubboService {
 //        distcp(fileList, dst);
 //    }
 
+//    @Async("taskExecutor")
+//    @Override
+//    public void toRspMix(List<String>[] fileList, String father, int jobId, int repartitionNum, String mixType) throws Exception {
+//        String dst = constant.url + constant.logPrefix + father;
+//        String savePath = constant.url + constant.globalRspPrefix + father.split("-")[0] + "/" + father;
+//        Stream<String> stringStream = Arrays.stream(fileList).flatMap(List::stream);
+//        //Stream<String> stringStream = fileList.stream().flatMap(List::stream);
+//        List<String> totalList = stringStream.collect(Collectors.toList());
+//        jobDubboService.updateJobArgs(jobId, "目的目录", dst);
+//        jobDubboService.updateJobStatus(jobId, "RUNNING");
+//        jobDubboService.syncInDB(jobId);
+//        distcp(totalList, dst);
+//        jobDubboService.endJob(jobId, "FINISHED");
+//        String host;
+//        try {
+//            host = new URI(constant.url).getHost();
+//        } catch (URISyntaxException e) {
+//            host = "wrong";
+//        }
+//        JobInfo mergeJobInfo = new JobInfo(1, "merge", "RUNNING", host, jobDubboService.getParentId(jobId));
+//        int mergeJobId = jobDubboService.createJob(mergeJobInfo);
+//        //List<String> collect = fileList.stream().map(
+//        List<String> collect = Arrays.stream(fileList).map(
+//                list -> {
+//                    List<String> collect1 = list.stream().map(
+//                            s -> s.lastIndexOf("/") == -1 ? s : s.substring(s.lastIndexOf("/") + 1)
+//                    ).collect(Collectors.toList());
+//                    String join = StringUtils.join(",", collect1);
+//                    return join;
+//                }
+//        ).collect(Collectors.toList());
+//        String args = StringUtils.join(":", collect);
+//        jobDubboService.updateJobArgs(mergeJobId, "文件临时目录", dst);
+//        //jobDubboService.updateJobArgs(mergeJobId, "合并的文件列表", args);
+//        jobDubboService.syncInDB(mergeJobId);
+//        try {
+//                mergeRSP(dst, args, repartitionNum, mixType);
+//                jobDubboService.endJob(mergeJobId, "FINISHED");
+//            } catch (Exception e) {
+//                jobDubboService.endJob(mergeJobId, "FAILED");
+//                throw new RuntimeException(e);
+//            }
+//            String hostx;
+//            try {
+//                hostx = new URI(constant.url).getHost();
+//            } catch (URISyntaxException e) {
+//                hostx = "wrong";
+//            }
+//            JobInfo mvJobInfo = new JobInfo(1, "moveFile", "RUNNNIG", hostx, jobDubboService.getParentId(jobId));
+//            mvJobInfo.addArgs("源路径", dst);
+//            mvJobInfo.addArgs("目的路径", savePath);
+//            int mvJobId = jobDubboService.createJob(mvJobInfo);
+//            try {
+//                mvTmpFile(dst, savePath);
+//                jobDubboService.updateJobStatus(mvJobId, "FINISHED");
+//            } catch (URISyntaxException e) {
+//                jobDubboService.updateJobStatus(mvJobId, "FAILED");
+//                throw new RuntimeException(e);
+//            } catch (IOException e) {
+//                jobDubboService.updateJobStatus(mvJobId, "FAILED");
+//                throw new RuntimeException(e);
+//            } catch (InterruptedException e) {
+//                jobDubboService.updateJobStatus(mvJobId, "FAILED");
+//                throw new RuntimeException(e);
+//            }
+//            jobDubboService.endSubJob(mvJobId, "FINISHED");
+//    }
     @Async("taskExecutor")
     @Override
     public void toRspMix(List<String>[] fileList, String father, int jobId, int repartitionNum, String mixType) throws Exception {
@@ -172,36 +238,36 @@ public class RSPDubboService implements OperationDubboService {
         //jobDubboService.updateJobArgs(mergeJobId, "合并的文件列表", args);
         jobDubboService.syncInDB(mergeJobId);
         try {
-                mergeRSP(dst, args, repartitionNum, mixType);
-                jobDubboService.endJob(mergeJobId, "FINISHED");
-            } catch (Exception e) {
-                jobDubboService.endJob(mergeJobId, "FAILED");
-                throw new RuntimeException(e);
-            }
-            String hostx;
-            try {
-                hostx = new URI(constant.url).getHost();
-            } catch (URISyntaxException e) {
-                hostx = "wrong";
-            }
-            JobInfo mvJobInfo = new JobInfo(1, "moveFile", "RUNNNIG", hostx, jobDubboService.getParentId(jobId));
-            mvJobInfo.addArgs("源路径", dst);
-            mvJobInfo.addArgs("目的路径", savePath);
-            int mvJobId = jobDubboService.createJob(mvJobInfo);
-            try {
-                mvTmpFile(dst, savePath);
-                jobDubboService.updateJobStatus(mvJobId, "FINISHED");
-            } catch (URISyntaxException e) {
-                jobDubboService.updateJobStatus(mvJobId, "FAILED");
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                jobDubboService.updateJobStatus(mvJobId, "FAILED");
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-                jobDubboService.updateJobStatus(mvJobId, "FAILED");
-                throw new RuntimeException(e);
-            }
-            jobDubboService.endSubJob(mvJobId, "FINISHED");
+            mergeRSP(dst, args, repartitionNum, mixType);
+            jobDubboService.endJob(mergeJobId, "FINISHED");
+        } catch (Exception e) {
+            jobDubboService.endJob(mergeJobId, "FAILED");
+            throw new RuntimeException(e);
+        }
+        String hostx;
+        try {
+            hostx = new URI(constant.url).getHost();
+        } catch (URISyntaxException e) {
+            hostx = "wrong";
+        }
+        JobInfo mvJobInfo = new JobInfo(1, "moveFile", "RUNNNIG", hostx, jobDubboService.getParentId(jobId));
+        mvJobInfo.addArgs("源路径", dst);
+        mvJobInfo.addArgs("目的路径", savePath);
+        int mvJobId = jobDubboService.createJob(mvJobInfo);
+        try {
+            mvTmpFile(dst, savePath);
+            jobDubboService.updateJobStatus(mvJobId, "FINISHED");
+        } catch (URISyntaxException e) {
+            jobDubboService.updateJobStatus(mvJobId, "FAILED");
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            jobDubboService.updateJobStatus(mvJobId, "FAILED");
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            jobDubboService.updateJobStatus(mvJobId, "FAILED");
+            throw new RuntimeException(e);
+        }
+        jobDubboService.endSubJob(mvJobId, "FINISHED");
     }
 
     @Async("taskExecutor")
@@ -212,12 +278,14 @@ public class RSPDubboService implements OperationDubboService {
         jobDubboService.updateJobArgs(jobId, "目的目录", dst);
         jobDubboService.updateJobStatus(jobId, "RUNNING");
         jobDubboService.syncInDB(jobId);
+        System.out.println("传输开始");
+        long l = System.currentTimeMillis();
         distcp(fileList, dst);
+        System.out.println("传输耗时" + (System.currentTimeMillis() - l) / 1000 + "s");
         jobDubboService.reduceJobCountDown(fatherJobId);
         jobDubboService.endJob(jobId, "FINISHED");
     }
 
-    @Async("taskExecutor")
     public int distcp(List<String> srcPaths, String dst) {
         try {
             Stream<Path> pathStream = srcPaths.stream().map(string -> new Path(string));
@@ -342,6 +410,6 @@ public class RSPDubboService implements OperationDubboService {
             }
         }
         fileSystem.delete(new Path(tempPath));
-        fileSystem.setOwner(path, "zhaolingxiang", "zhaolingxiang");
+        fileSystem.setOwner(path, constant.user, constant.user);
     }
 }

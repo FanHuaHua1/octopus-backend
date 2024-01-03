@@ -11,26 +11,35 @@ import java.net.URISyntaxException;
 
 @Component
 public class RSPConstant {
-    @Value("${hdfs.prefix.origin}")
+    @Value("${dubbo.protocol.host}")
+    public String ip;
+
+    @Value("${hdfs.origin}")
     public String originPrefix;
 
-    @Value("${hdfs.prefix.localrsp}")
+    @Value("${hdfs.localrsp}")
     public String localRspPrefix;
 
-    @Value("${hdfs.prefix.globalrsp}")
+    @Value("${hdfs.globalrsp}")
     public String globalRspPrefix;
 
-    @Value("${hdfs.prefix.tmp}")
+    @Value("${hdfs.tmp}")
     public String logPrefix;
-    @Value("${hdfs.prefix.models}")
+
+    @Value("${hdfs.models}")
     public String modelPrefix;
-    @Value("${hdfs.prefix.algo}")
+
+    @Value("${hdfs.algo}")
     public String algoPrefix;
 
-
+    @Value("${hdfs.user}")
+    public String user;
 
     @Value("${hdfs.url}")
     public String url;
+
+    @Value("${hdfs.app}")
+    public String app;
     private FileSystem fileSystem;
 
     private FileSystem superFileSystem;
@@ -39,7 +48,6 @@ public class RSPConstant {
         if(fileSystem == null){
             URI uri = new URI(url);
             Configuration conf = new Configuration();
-            String user = "zhaolingxiang";
             fileSystem = FileSystem.get(uri, conf, user);
         }
         return fileSystem;
@@ -49,8 +57,7 @@ public class RSPConstant {
         if(superFileSystem == null){
             URI uri = new URI(url);
             Configuration conf = new Configuration();
-            String user = "hdfs";
-            superFileSystem = FileSystem.get(uri, conf, user);
+            superFileSystem = FileSystem.get(uri, conf, "hdfs");
         }
         return superFileSystem;
     }

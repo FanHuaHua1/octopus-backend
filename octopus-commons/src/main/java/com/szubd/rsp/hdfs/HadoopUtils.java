@@ -25,7 +25,7 @@ public class HadoopUtils {
         if(!HAUtil.isHAEnabled(conf, namenodeNameServiceId)){
             host = new URI(conf.get("fs.defaultFS")).getHost();
         } else {
-            FileSystem system = FileSystem.get(new URI("hdfs://" + namenodeNameServiceId), conf,"zhaolingxiang");
+            FileSystem system = FileSystem.get(new URI("hdfs://" + namenodeNameServiceId), conf,"bigdata");
             host = HAUtil.getAddressOfActive(system).getHostString();
             system.close();
         }
@@ -35,7 +35,7 @@ public class HadoopUtils {
     public static List<Map<String, Object>> getHDFSBlockAddress(String url, String filePath) throws IOException, InterruptedException, URISyntaxException {
         URI uri = new URI(url);
         Configuration conf =  new Configuration();
-        String user = "zhaolingxiang";
+        String user = "bigdata";
         FileSystem fileSystem = FileSystem.get(uri, conf, user);
         BlockLocation[] fileBlockLocations = fileSystem.getFileBlockLocations(new Path(filePath), 0, Long.MAX_VALUE);
         List<Map<String, Object>> list = new LinkedList<>();
@@ -53,7 +53,7 @@ public class HadoopUtils {
     public static String getBlockStatus(String url, String filePath) throws IOException, InterruptedException, URISyntaxException {
         URI uri = new URI(url);
         Configuration conf =  new Configuration();
-        String user = "zhaolingxiang";
+        String user = "bigdata";
         FileSystem fileSystem = FileSystem.get(uri, conf, user);
         FileStatus[] fileStatuses = fileSystem.listStatus(new Path(filePath));
         StringBuilder stringBuilder = new StringBuilder();
@@ -78,7 +78,7 @@ public class HadoopUtils {
     public static List<Map<String, Object>> getBlockList(String url, String filePath, String superName, String name, Integer nodeId) throws IOException, InterruptedException, URISyntaxException {
         URI uri = new URI(url);
         Configuration conf =  new Configuration();
-        String user = "zhaolingxiang";
+        String user = "bigdata";
         FileSystem fileSystem = FileSystem.get(uri, conf, user);
         FileStatus[] fileStatuses = fileSystem.listStatus(new Path(filePath));
         System.out.println(fileStatuses);
@@ -104,7 +104,7 @@ public class HadoopUtils {
         System.out.println(path);
         URI uri = new URI(url);
         Configuration conf = new Configuration();
-        String user = "zhaolingxiang";
+        String user = "bigdata";
         FileSystem fileSystem = FileSystem.get(uri, conf, user);
         FileStatus fileStatus = fileSystem.getFileStatus(new Path(path));
         fileSystem.close();

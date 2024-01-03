@@ -15,14 +15,15 @@ server:
 hdfs:
   url: hdfs://172.31.238.102:8020
   #url: hdfs://172.31.238.21:8020
-  prefix:
-    general: /user/zhaolingxiang/rspmanager/
-    origin: /user/zhaolingxiang/rspmanager/origin/
-    localrsp: /user/zhaolingxiang/rspmanager/localrsp/
-    globalrsp: /user/zhaolingxiang/rspmanager/globalrsp/
-    tmp: /user/zhaolingxiang/rspmanager/tmp/
-    algo: /user/zhaolingxiang/rspmanager/algo/
-    models: /user/zhaolingxiang/rspmanager/models/
+  user: bigdata
+  prefix: /user/${hdfs.user}/rspmanager/
+  origin: ${hdfs.prefix}origin/
+  localrsp: ${hdfs.prefix}localrsp/
+  globalrsp: ${hdfs.prefix}globalrsp/
+  tmp: ${hdfs.prefix}tmp/
+  algo: ${hdfs.prefix}algo/
+  models: ${hdfs.prefix}models/
+  app: ${hdfs.prefix}app/
 yarn:
   rm: http://172.31.238.102:8088
 spring:

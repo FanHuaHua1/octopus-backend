@@ -2,11 +2,13 @@ package com.szubd.rsp.service.operation;
 
 import com.szubd.rsp.algo.RspMixParams;
 import com.szubd.rsp.algo.RspParams;
+import com.szubd.rsp.file.LocalRSPInfo;
 import com.szubd.rsp.file.OriginInfo;
 import com.szubd.rsp.http.Result;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.szubd.rsp.node.NodeInfoService;
 import com.szubd.rsp.node.NodeService;
 
@@ -61,7 +63,9 @@ public class RSPInfoController {
     public Result toRspMix(@RequestBody JSONObject jsonObject) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        RspMixParams rspMixParams = mapper.readValue(jsonObject.toJSONString(), RspMixParams.class);
+        // 使用 TypeReference 来指定泛型类型
+        TypeReference<RspMixParams<LocalRSPInfo>> typeReference = new TypeReference<RspMixParams<LocalRSPInfo>>() {};
+        RspMixParams<LocalRSPInfo> rspMixParams = mapper.readValue(jsonObject.toJSONString(), typeReference);
         logger.info("RSP混洗参数： {}", rspMixParams);
         if (rspMixParams.data.size() != 0){
             //rspService.rspMixAction(rspMixParams);
@@ -69,4 +73,27 @@ public class RSPInfoController {
         }
         return ResultResponse.success();
     }
+
+    /**
+     * 直接使用原始数据进行混洗，中间要加入RSP化的过程，暂时不支持
+     * @param jsonObject
+     * @return
+     * @throws Exception
+     */
+    @ResponseBody
+    @PostMapping("/torspmixorigin")
+    public Result toRspMixOrigin(@RequestBody JSONObject jsonObject) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // 使用 TypeReference 来指定泛型类型
+        TypeReference<RspMixParams<LocalRSPInfo>> typeReference = new TypeReference<RspMixParams<LocalRSPInfo>>() {};
+        RspMixParams<LocalRSPInfo> rspMixParams = mapper.readValue(jsonObject.toJSONString(), typeReference);
+        logger.info("RSP混洗参数： {}", rspMixParams);
+        if (rspMixParams.data.size() != 0){
+            //rspService.rspMixAction(rspMixParams);
+            //rspService.rspMixActionWithStrategy(rspMixParams);
+        }
+        return ResultResponse.success();
+    }
+
 }

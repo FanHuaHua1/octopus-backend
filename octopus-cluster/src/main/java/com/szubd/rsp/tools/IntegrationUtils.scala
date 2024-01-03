@@ -3,6 +3,7 @@ package com.szubd.rsp.tools
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import javafx.util.Pair
+import org.slf4j.{Logger, LoggerFactory}
 import smile.classification.{DecisionTree, LogisticRegression, RandomForest, SVM}
 
 import scala.reflect.{ClassTag, classTag}
@@ -14,7 +15,13 @@ import scala.reflect.{ClassTag, classTag}
  */
 object IntegrationUtils {
 
-//  def getModels[T:ClassTag](path: String): T = {
+  protected val logger: Logger = LoggerFactory.getLogger(IntegrationUtils.getClass)
+  protected val sc = new SparkContext(new SparkConf()
+    .setAppName("Integration")
+    .setMaster("local")
+    .set("spark.metrics.conf", "/opt/cloudera/parcels/CDH-6.3.2-1.cdh6.3.2.p0.1605554/etc/spark/metrics.properties"))
+
+  //  def getModels[T:ClassTag](path: String): T = {
 //    val sparkconf = new SparkConf().setAppName("Integration").setMaster("local[*]")
 //    val sc = new SparkContext(sparkconf)
 //    val value1: RDD[T] = sc.objectFile(path)
@@ -37,7 +44,6 @@ object IntegrationUtils {
         val rdd: RDD[(Any, Double)] = sc.objectFile(path)
         val modelCount = rdd.getNumPartitions
         //val arr: Array[(Any, Double)] = sc.objectFile(path).collect()
-        println("==================modelCount " + modelCount)
         val models: Array[(Any, Double)] = rdd.collect()
         algoName match {
           case "RF" => models.asInstanceOf[Array[(RandomForest, Double)]]
@@ -65,8 +71,6 @@ object IntegrationUtils {
 
   def getModels(path: String, algoType: String, algoName: String): (Object, Int) = {
     println("algoType: " + algoType + ", algoName: " + algoName)
-    val sparkconf = new SparkConf().setAppName("Integration").setMaster("local[*]")
-    val sc = new SparkContext(sparkconf)
     var models: Object = null
     var modelsCount = 0
     try {
@@ -74,12 +78,11 @@ object IntegrationUtils {
      val (modelsTemp, modelsCountTemp) = getModels(sc, path, algoType, algoName)
       models = modelsTemp
       modelsCount = modelsCountTemp
-      println("================modelsCount: " + modelsCount)
+      logger.info(" [Integration] models count: {}", modelsCount)
     } catch {
       case e: Exception => println("getModels error: " + e.getMessage)
-    } finally {
-      sc.stop()
     }
+    logger.info("是否结束" + sc.isStopped)
     (models, modelsCount)
   }
 

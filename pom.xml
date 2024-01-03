@@ -32,7 +32,7 @@
         <spark.version>2.4.0</spark.version>
         <smile.version>2.6.0</smile.version>
         <hadoop.version>3.0.0</hadoop.version>
-        <nacos.version>2.2.3</nacos.version>
+        <nacos.version>2.3.0</nacos.version>
         <curator.version>4.3.0</curator.version>
         <lombok.version>1.18.28</lombok.version>
         <fastjson.version>2.0.35</fastjson.version>

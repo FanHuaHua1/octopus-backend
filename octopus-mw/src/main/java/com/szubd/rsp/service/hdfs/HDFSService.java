@@ -53,7 +53,7 @@ public class HDFSService {
     public static boolean isPathExist(String url, String path) throws Exception {
         URI uri = new URI(url);
         Configuration conf =  new Configuration();
-        String user = "zhaolingxiang";
+        String user = "bigdata";
         FileSystem fileSystem = FileSystem.get(uri, conf, user);
         return fileSystem.exists(new Path(path));
     }

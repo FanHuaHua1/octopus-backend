@@ -5,7 +5,7 @@ dubbo:
     name: dubbo
     port: 7171
   registry:
-    address: nacos://172.31.238.116:8848
+    address: nacos://192.168.0.183:8848
     #address: zookeeper://${zookeeper.address:127.0.0.1}:2181
     #address: zookeeper://${zookeeper.address:43.136.22.7}:2181
   consumer:
@@ -19,9 +19,9 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://39.108.187.149:3306/rspdatadb
-    username: rsp
-    password: rsp123456
+    url: jdbc:mysql://192.168.0.183:3306/octopus
+    username: root
+    password: 11016@MySQL!
 
 # Hikari 连接池配置
 hikari:

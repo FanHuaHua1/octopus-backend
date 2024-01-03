@@ -19,7 +19,7 @@ import scala.collection.mutable.{Map => MutablMap}
  * @desc
  */
 object SparkVotePrediction {
-  private val predictBlockPath = "E:/expdatas/datas/clf.parquet"
+  private val predictBlockPath = "/home/zhaolingxiang/octopus-code"
   //def run[M <: LogoClassifier[M]](modelRdd: RDD[(M, Double)], algo:String): Unit = {
   def run[M <: LogoClassifier[M]](modelS: List[(SoftClassifier[_ >: Tuple with Array[Double]], Double)], algo:String): Unit = {
     val sparkconf = new SparkConf().setAppName("Test_Smile").setMaster("local[*]")

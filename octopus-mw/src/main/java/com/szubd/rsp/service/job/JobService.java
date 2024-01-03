@@ -138,6 +138,22 @@ public class JobService implements JobDubboService {
         return 1;
     }
 
+    @Override
+    public int updateMultiJobArgs(int jobId, String... kvs) {
+        if(kvs.length == 0 || kvs.length % 2 != 0){
+            return -1;
+        }
+        JobInfo jobInfo = jobInfoHashMap.get(jobId);
+        if (jobInfo == null) {
+            return 0;
+        }
+        HashMap<String, String> argsMap = jobInfo.getArgs();
+        for(int i = 0; i < kvs.length; i+=2){
+            argsMap.put(kvs[i], kvs[i + 1]);
+        }
+        return 1;
+    }
+
     public JobInfo getJobInfo(int jobId) {
         return jobInfoHashMap.get(jobId);
     }

@@ -43,14 +43,14 @@ public class ListenService implements CommandLineRunner {
                             case CREATE:
                                 Event.CreateEvent createEvent = (Event.CreateEvent) event;
                                 handler.handleCreateEvent(createEvent);
-                                if(createEvent.getPath().contains("zhaolingxiang"))
+                                if(createEvent.getPath().contains(rspConstant.user))
                                     logger.info("Event:CREATE, Path:======>  " + createEvent.getPath());
                                 break;
                             //Sent when a file, directory, or symlink is renamed.
                             case RENAME:
                                 Event.RenameEvent renameEvent = (Event.RenameEvent) event;
                                 handler.handleRenameEvent(renameEvent);
-                                if(renameEvent.getDstPath().contains("zhaolingxiang"))
+                                if(renameEvent.getDstPath().contains(rspConstant.user))
                                     logger.info("Event:RENAME, Path:======>  "+  renameEvent.getDstPath());
                                 break;
                             default: break;

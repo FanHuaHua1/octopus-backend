@@ -10,8 +10,8 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RspMixParams {
-    public List<OriginInfo> data;
+public class RspMixParams<T> {
+    public List<T> data;
     public String blockRatio;
     public String repartitionNum;
     public String mixType;

@@ -7,6 +7,8 @@ public interface JobDubboService {
 
     int updateJobArgs(int jobId, String argName, String argValue);
 
+    int updateMultiJobArgs(int jobId, String... kvs);
+
     JobInfo getJobInfo(int jobId);
 
     int getParentId(int jobId);

@@ -52,6 +52,15 @@ public class JobInfo implements Serializable {
         this.args.put(key, value);
     }
 
+    public void addMultiArgs(String... kvs){
+        if(kvs.length == 0 || kvs.length % 2 != 0){
+            for(int i = 0; i < kvs.length; i += 2){
+                this.args.put(kvs[i], kvs[i + 1]);
+            }
+        }
+
+    }
+
     public void addAlgoArgs(String key, String value){
         this.algoArgs.put(key, value);
     }

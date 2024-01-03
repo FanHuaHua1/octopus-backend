@@ -17,7 +17,7 @@ import java.net.InetAddress;
 @Component
 @Order(1)
 public class NodeInfoQueryService implements CommandLineRunner {
-    @Value("${hdfs.prefix.general}")
+    @Value("${hdfs.prefix}")
     private String generalPrefix;
     @Value("${spark-info.clusterConfig.clusterName}")
     private String clusterName;

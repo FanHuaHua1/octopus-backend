@@ -29,18 +29,19 @@ public class NacosService implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        NamingService naming = NamingFactory.createNamingService(NACOS_ADDRESS);
-        naming.subscribe("consumer", event -> {
-            if (event instanceof NamingEvent) {
-                logger.info("subscribe:{}", ((NamingEvent) event).getServiceName());
-                logger.info("subscribe:{}", ((NamingEvent) event).getInstances());
-            }
-        });
+//        NamingService naming = NamingFactory.createNamingService(NACOS_ADDRESS);
+//        naming.subscribe("consumer", event -> {
+//            if (event instanceof NamingEvent) {
+//                logger.info("subscribe:{}", ((NamingEvent) event).getServiceName());
+//                logger.info("subscribe:{}", ((NamingEvent) event).getInstances());
+//            }
+//        });
     }
 
     public List<Instance> listAliveCluster() throws Exception {
-        NamingService naming = NamingFactory.createNamingService(NACOS_ADDRESS);
-        List<Instance> allInstances = naming.getAllInstances("cluster");
-        return allInstances;
+//        NamingService naming = NamingFactory.createNamingService(NACOS_ADDRESS);
+//        List<Instance> allInstances = naming.getAllInstances("cluster");
+//        return allInstances;
+        return null;
     }
 }

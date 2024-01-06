@@ -1,11 +1,15 @@
 package com.szubd.rsp.tools;
 
+import com.szubd.rsp.constants.RSPConstant;
+import lombok.experimental.Accessors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URI;
@@ -70,4 +74,6 @@ public class FileStatusUtils {
         }
         return ImmutablePair.of(blocks, len);
     }
+
+
 }

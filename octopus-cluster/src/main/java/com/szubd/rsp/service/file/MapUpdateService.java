@@ -17,6 +17,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.szubd.rsp.tools.FileStatusUtils.calBlocksNumAndLength;
 
@@ -40,7 +41,7 @@ public class MapUpdateService {
     @Scheduled(fixedRate = 5000)
     @Async("taskExecutor")
     public void runScheduleOrigin() {
-        HashMap<String, Boolean> map = EventHandler.getMap();
+        ConcurrentHashMap<String, Boolean> map = EventHandler.getMap();
         if(!map.isEmpty()){
             logger.info("Origin需要更新:{}", map);
         }
@@ -62,7 +63,7 @@ public class MapUpdateService {
     @Scheduled(fixedRate = 5000)
     @Async("taskExecutor")
     public void runScheduleLocalRSP() {
-        HashMap<String, Boolean> map = EventHandler.getLocalRspMap();
+        ConcurrentHashMap<String, Boolean> map = EventHandler.getLocalRspMap();
         if(!map.isEmpty()){
             logger.info("LocalRSP需要更新:{}", map);
         }
@@ -84,7 +85,7 @@ public class MapUpdateService {
     @Scheduled(fixedRate = 5000)
     @Async("taskExecutor")
     public void runScheduleGlobalRSP() {
-        HashMap<String, Boolean> map = EventHandler.existGlobalRspMap();
+        ConcurrentHashMap<String, Boolean> map = EventHandler.existGlobalRspMap();
         if(!map.isEmpty()){
             logger.info("GlobalRSP需要更新:{}", map);
         }

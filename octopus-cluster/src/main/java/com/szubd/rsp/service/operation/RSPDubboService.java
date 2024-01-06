@@ -7,6 +7,7 @@ import com.szubd.rsp.job.JobInfo;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -23,6 +24,7 @@ import org.apache.hadoop.tools.DistCpOptions;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
@@ -94,7 +96,15 @@ public class RSPDubboService implements OperationDubboService {
     @Async("taskExecutor")
     public void mergeRSP(String tmpPath, String fileList, int repartitionNum, String mixType) throws Exception{
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        SparkAppHandle handler = new SparkLauncher()
+        String fileListTmpUrl = tmpPath + "/mergeRspTmpFile.txt";
+        changeFileOwner(tmpPath);
+        writeStringToHDFS(fileListTmpUrl, fileList);
+        System.out.println(tmpPath);
+        System.out.println(fileList);
+        HashMap env = new HashMap();
+        //这两个属性必须设置
+        env.put("HADOOP_CONF_DIR","/etc/hadoop/conf");
+        SparkAppHandle handler = new SparkLauncher(env)
             .setAppName("MixRSP-Merge")
             .setMaster("yarn")
 //            .setConf("spark.driver.memory", "4g")
@@ -103,8 +113,8 @@ public class RSPDubboService implements OperationDubboService {
             .setConf("spark.eventLog.enabled", "true")
             //.setConf("spark.eventLog.dir", "hdfs://nameservice1/user/spark/applicationHistory")
             .setAppResource(constant.url + constant.app + "octopus-core-1.0-SNAPSHOT-jar-with-dependencies.jar")
-            .setMainClass("com.szubd.rsp.MergeRSP")
-            .addAppArgs(tmpPath, fileList, repartitionNum + "" ,mixType)
+            .setMainClass("com.szubd.rsp.MergeRSPWithUrl")
+            .addAppArgs(tmpPath, fileListTmpUrl, repartitionNum + "" ,mixType)
             .setDeployMode("cluster")
             .startApplication(new SparkAppHandle.Listener(){
                 @Override
@@ -129,6 +139,26 @@ public class RSPDubboService implements OperationDubboService {
     }
 
 
+    protected void writeStringToHDFS(String filename, String content){
+        try {
+            FileSystem fs = constant.getFileSystem();
+            FSDataOutputStream outputStream = fs.create(new Path(filename));
+            outputStream.write(content.getBytes(StandardCharsets.UTF_8));
+            outputStream.close();
+            System.out.println("File written to HDFS successfully.");
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+    protected void changeFileOwner(String filename){
+        try {
+            FileSystem fs = constant.getSuperFileSystem();
+            fs.setOwner(new Path(filename), constant.user, constant.user);
+            System.out.println("File owner changed successfully.");
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
 //    @Override
 //    public void toRspMix(List<String> fileList, String father) {
 //        String dst = constant.url + constant.globalRspPrefix + father.split("-")[0] + "/" + father;
@@ -291,13 +321,35 @@ public class RSPDubboService implements OperationDubboService {
             Stream<Path> pathStream = srcPaths.stream().map(string -> new Path(string));
             List<Path> srcPathsList = pathStream.collect(Collectors.toList());
             DistCpOptions options = new DistCpOptions.Builder(srcPathsList, new Path(dst))
-           .withOverwrite(true)
-           .maxMaps(100)
-           .preserve(DistCpOptions.FileAttribute.BLOCKSIZE)
-           //.withLogPath(new Path(url + "/user/zhaolingxiang/rspmanager/log"))
-           .build();
-            Configuration configuration = new Configuration();
+                    .withOverwrite(true)
+                    .preserve(DistCpOptions.FileAttribute.BLOCKSIZE)
+                    .preserve(DistCpOptions.FileAttribute.GROUP)
+                    .preserve(DistCpOptions.FileAttribute.USER)
+                    .preserve(DistCpOptions.FileAttribute.REPLICATION)
+                    .withCopyStrategy("dynamic")
+                    .maxMaps(40)
+                    // .withLogPath(new Path(url + "/user/zhaolingxiang/rspmanager/log"))
+                    .build();
 
+//            DistCpOptions.Builder builder = new DistCpOptions.Builder(srcPathsList, new Path(dst))
+//                    .withOverwrite(true)
+//                    .preserve(DistCpOptions.FileAttribute.BLOCKSIZE)
+//                    .preserve(DistCpOptions.FileAttribute.GROUP)
+//                    .preserve(DistCpOptions.FileAttribute.USER)
+//                    .preserve(DistCpOptions.FileAttribute.REPLICATION)
+//                    .withCopyStrategy("dynamic");
+//            if(dst.contains("192.168.0.67")){
+//                builder = builder.maxMaps(100);
+//            } else {
+//                builder = builder.maxMaps(50);
+//            }
+//            DistCpOptions options = builder.build();
+            Configuration configuration = new Configuration();
+            configuration.addResource(new Path("/etc/hadoop/conf/core-site.xml"));
+            configuration.addResource(new Path("/etc/hadoop/conf/hdfs-site.xml"));
+            configuration.addResource(new Path("/etc/hadoop/conf/mapred-site.xml"));
+            configuration.addResource(new Path("/etc/hadoop/conf/yarn-site.xml"));
+            //configuration.set("dfs.replication","1");
             DistCp distcp = new DistCp(configuration, options);
 //            int run = ToolRunner.run(configuration, distcp, constructDistCpParams(srcPathsList, new Path(dst)));
             Job execute = distcp.execute();
@@ -398,6 +450,7 @@ public class RSPDubboService implements OperationDubboService {
 //    }
 
     public void mvTmpFile(String tempPath, String savePath) throws URISyntaxException, IOException, InterruptedException {
+        System.out.printf("开始移动文件");
         FileSystem fileSystem = constant.getSuperFileSystem();
         Path path = new Path(savePath);
         fileSystem.mkdirs(path);

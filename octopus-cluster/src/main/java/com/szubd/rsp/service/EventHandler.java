@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class EventHandler {
@@ -36,27 +37,27 @@ public class EventHandler {
     private GlobalRspDao globalRspDao;
     @Autowired
     private RSPConstant constant;
-    private static final HashMap<String, Boolean> existMap;
-    private static final HashMap<String, Boolean> existLocalRspMap;
-    private static final HashMap<String, Boolean> existGlobalRspMap;
+    private static final ConcurrentHashMap<String, Boolean> existMap;
+    private static final ConcurrentHashMap<String, Boolean> existLocalRspMap;
+    private static final ConcurrentHashMap<String, Boolean> existGlobalRspMap;
 
     protected static final Logger logger = LoggerFactory.getLogger(EventHandler.class);
 
     static {
-        existMap = new HashMap<>();
-        existLocalRspMap = new HashMap<>();
-        existGlobalRspMap = new HashMap<>();
+        existMap = new ConcurrentHashMap<>();
+        existLocalRspMap = new ConcurrentHashMap<>();
+        existGlobalRspMap = new ConcurrentHashMap<>();
     }
 
-    public static HashMap<String, Boolean> getMap(){
+    public static ConcurrentHashMap<String, Boolean> getMap(){
         return existMap;
     }
 
-    public static HashMap<String, Boolean> getLocalRspMap(){
+    public static ConcurrentHashMap<String, Boolean> getLocalRspMap(){
         return existLocalRspMap;
     }
 
-    public static HashMap<String, Boolean> existGlobalRspMap(){
+    public static ConcurrentHashMap<String, Boolean> existGlobalRspMap(){
         return existGlobalRspMap;
     }
 

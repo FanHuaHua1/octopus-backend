@@ -45,7 +45,7 @@ public class ClusterController {
     @Scheduled(fixedRate = 20000)
     public void checkAlive() {
         // 配置文件转化的集合拉过来 一定要注意程序的执行顺序 避免空指针异常
-        getAliveServiceIps();
+        //getAliveServiceIps();
     }
 
     @GetMapping("/ClustersInfo")

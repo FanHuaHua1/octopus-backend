@@ -67,9 +67,9 @@ public class RSPInfoController {
         TypeReference<RspMixParams<LocalRSPInfo>> typeReference = new TypeReference<RspMixParams<LocalRSPInfo>>() {};
         RspMixParams<LocalRSPInfo> rspMixParams = mapper.readValue(jsonObject.toJSONString(), typeReference);
         logger.info("RSP混洗参数： {}", rspMixParams);
-        if (rspMixParams.data.size() != 0){
-            //rspService.rspMixAction(rspMixParams);
-            rspService.rspMixActionWithStrategy(rspMixParams);
+        if (!rspMixParams.data.isEmpty()){
+            rspService.rspMixAction(rspMixParams);
+            //rspService.rspMixActionWithStrategy(rspMixParams);
         }
         return ResultResponse.success();
     }

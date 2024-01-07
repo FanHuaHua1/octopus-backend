@@ -4,10 +4,14 @@ import com.szubd.rsp.algo.AlgoDubboService;
 import com.szubd.rsp.constants.JobConstant;
 import com.szubd.rsp.constants.RSPConstant;
 import com.szubd.rsp.integration.IntegrationDubboService;
+import com.szubd.rsp.job.JobDubboLogoService;
 import com.szubd.rsp.job.JobDubboService;
 import com.szubd.rsp.job.JobInfo;
+import com.szubd.rsp.job.JobLogoInfo;
 import com.szubd.rsp.service.job.JobUtils;
 import com.szubd.rsp.tools.IntegrationUtils;
+import com.szubd.rsp.user.UserResource;
+import com.szubd.rsp.user.UserResourceDubboService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
@@ -35,10 +39,16 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
     private RSPConstant constant;
     @Autowired
     private JobConstant jobConstant;
+
+    @DubboReference
+    private JobDubboLogoService jobDubboLogoService;
     @DubboReference
     private IntegrationDubboService integrationDubboService;
     @DubboReference
     private JobDubboService jobDubboService;
+
+    @DubboReference
+    private UserResourceDubboService userResourceDubboService;
     protected static final Logger logger = LoggerFactory.getLogger(AlgoDubboServiceImpl.class);
 
     @Async("taskExecutor")
@@ -133,6 +143,7 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
     @Async("taskExecutor")
     @Override
     public void toAlgoLogo(
+                       String userId,
                        String algoType,
                        String algoSubSetting,
                        String algoName,
@@ -142,21 +153,66 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
                        int executorCores,
                        String... args) {
             logger.info("正在发起调用算法执行调用");
-            try {
+        JobLogoInfo jobInfo = new JobLogoInfo(userId, 3, algoName, "Waiting");
+
+        jobInfo.setExecutorArgs(executorNum,executorCores,executorMemory);
+        logger.info("+++++++++++++++++++"+userId+"++++++++++++++++++");
+        int jobId = jobDubboLogoService.createJob(jobInfo);
+        //更新用户正在使用的资源
+        logger.info("准备开始任务，正在更新用户资源");
+        UserResource userResource = userResourceDubboService.queryUserResourceByUserId(userId);
+        userResource.setUseCpu(userResource.getUseCpu() + executorNum * executorCores);
+        userResource.setUseMemory(userResource.getUseMemory() + executorMemory * 1024L * executorNum);
+        userResource.update(userResource);
+        logger.info("+++++++++++++++++++"+userResource.toString()+"++++++++++++++++++");
+        try {
                 String path = constant.url + constant.modelPrefix + UUID.randomUUID();
-                SparkAppHandle handler = getCorrespondingLauncher(algoType, algoSubSetting, algoName, filename, path, "false", "-1", "-1", "-1", " ")
+
+
+                SparkAppHandle handler = getCorrespondingLauncher(algoType, algoSubSetting, algoName, filename, path, "false",
+                        String.valueOf(executorNum), String.valueOf(executorMemory), String.valueOf(executorCores), " ")
                     .startApplication(new SparkAppHandle.Listener(){
                         @Override
                         public void stateChanged(SparkAppHandle handle) {
+                            if(handle.getState().isFinal()){
+                                //结束的时候更新
+                                logger.info("准备结束，正在更新数据");
+                                userResource.setUseMemory(userResource.getUseMemory() - executorMemory * 1024L * executorNum);
+                                userResource.setUseCpu(userResource.getUseCpu() - executorNum * executorCores);
+                                userResource.update(userResource);
+                                String yarnLogUrl = "";
+                                String yarnLog = "";
+                                try {
+                                    yarnLogUrl = JobUtils.getYarnLogUrl(jobConstant.rmUrl, handle.getAppId());
+                                    yarnLog = JobUtils.getYarnLog(yarnLogUrl);
+                                } catch (IOException e) {
+                                    logger.warn("yarn logurl is null.");
+                                }
+                                logger.info("fetched logurl: {}", yarnLogUrl);
+                                //结束时间
+                            }
+                            else if (Objects.equals(handle.getState().toString(), "SUBMITTED")) {
+                                String sparkJobId = handle.getAppId();
+                                if(sparkJobId != null && !sparkJobId.isEmpty()){
+                                    jobDubboLogoService.updateJobArgs(jobId ,"Spark任务ID", sparkJobId);
+                                }
+                            }
+                            jobDubboLogoService.updateJobStatus(jobId,handle.getState().toString());
+                            jobDubboLogoService.syncInDB(jobId);
                         }
                         @Override
                         public void infoChanged(SparkAppHandle handle) {
                             logger.info("Spark Job Info: {}", handle.getState().toString());
+
                         }
                     });
+                System.out.println(handler.getState());
             } catch (IOException e) {
+//                job执行失败
+                jobDubboLogoService.endJob(jobId,"FAILED");
                 throw new RuntimeException(e);
             }
+
             logger.info("等待算法调用结束");
     }
 

@@ -22,6 +22,13 @@ spring:
     url: jdbc:mysql://39.108.187.149:3306/rspdatadb
     username: rsp
     password: rsp123456
+  servlet:
+    multipart:
+      # 文件上传大小限制【超过上传大小将会抛出异常】
+      # 单文件上传大小
+      max-file-size: 20MB
+      # 文件上传请求体总大小（多个文件）
+      max-request-size: 20MB
 
 # Hikari 连接池配置
 hikari:
@@ -36,4 +43,12 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
+# HDFS 配置
+hdfs:
+  nameNode:
+    url: hdfs://172.31.238.102:8020
+
 #debug: true
+# token 过期配置
+token:
+  expiredHour: 4

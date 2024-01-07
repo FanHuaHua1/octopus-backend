@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.user.UserResourceMapper">
+
+    <resultMap id="UserResource" type="com.szubd.rsp.user.UserResource">
+        <id column="ID" property="id"/>
+        <result column="USER_ID" property="userId"/>
+        <result column="MEMORY" property="memory"/>
+        <result column="CPU" property="cpu"/>
+        <result column="HARD_DISK" property="hardDisk"/>
+        <result column="USE_MEMORY" property="useMemory"/>
+        <result column="USE_CPU" property="useCpu"/>
+        <result column="USE_HARD_DISK" property="useHardDisk"/>
+    </resultMap>
+
+    <sql id="BASE_RESOURCE">
+        `MEMORY`, `CPU`, `HARD_DISK`,`USE_MEMORY`, `USE_CPU`, `USE_HARD_DISK`
+    </sql>
+
+    <select id="queryUserResourceByUserId" resultMap="UserResource">
+        select USER_ID, <include refid="BASE_RESOURCE"/>
+             from USERS_RESOURCE
+             <where>
+                 USER_ID=#{userID}
+             </where>
+    </select>
+
+    <insert id="insertNewUserResource" parameterType="com.szubd.rsp.user.UserResource">
+        insert into USERS_RESOURCE(USER_ID, <include refid="BASE_RESOURCE"/>, CREATED_TIME)
+        values (#{userId},
+                #{memory},
+                #{cpu},
+                #{hardDisk},
+                #{useMemory},
+                #{useCpu},
+                #{useHardDisk},
+                CURRENT_TIMESTAMP)
+    </insert>
+
+    <update id="updateByUserId" parameterType="com.szubd.rsp.user.UserResource">
+        update USERS_RESOURCE set
+                                  MEMORY = #{memory},
+                                  CPU = #{cpu},
+                                  HARD_DISK = #{hardDisk},
+                                USE_MEMORY = #{useMemory},
+                                USE_CPU = #{useCpu},
+                                USEHARD_DISK = #{useHardDisk}
+        where USER_ID = #{userId}
+    </update>
+
+</mapper>

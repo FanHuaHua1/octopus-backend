@@ -3,9 +3,11 @@ package com.szubd.rsp.service.algo;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.szubd.rsp.algo.AlgoDubboService;
 import com.szubd.rsp.job.JobInfo;
+import com.szubd.rsp.job.JobLogoInfo;
 import com.szubd.rsp.node.NodeInfoService;
 import com.szubd.rsp.algo.AlgoInfo;
 import com.szubd.rsp.node.NodeInfo;
+import com.szubd.rsp.service.job.JobLogoService;
 import com.szubd.rsp.service.job.JobService;
 import com.szubd.rsp.service.node.NacosService;
 import com.szubd.rsp.tools.DubboUtils;
@@ -47,6 +49,8 @@ public class AlgoService {
     AlgoMapper algoMapper;
     @Autowired
     private JobService jobService;
+    @Autowired
+    private JobLogoService jobLogoService;
     @Autowired
     private NodeInfoService nodeInfoService;
     @Autowired
@@ -118,27 +122,30 @@ public class AlgoService {
         jobService.syncInDB(jobId);
     }
 
-    public void submitLogo(AlgoController.LogoAlgoInfos logoAlgoInfos, String algoType, String algoSubSetting, Map<String,String> map) throws URISyntaxException, UnknownHostException {
+    public void submitLogo(String userId, AlgoController.LogoAlgoInfos logoAlgoInfos, String algoType, String algoSubSetting, Map<String,String> map) throws URISyntaxException, UnknownHostException {
         String algoName = logoAlgoInfos.algo;
         int nodeId = logoAlgoInfos.getNodeId();
         NodeInfo nodeInfo = nodeInfoService.queryForNodeInfoById(nodeId);
         String path = nodeInfo.getPrefix() + "localrsp/" + logoAlgoInfos.getSuperName() + "/" + logoAlgoInfos.getName();
         AlgoDubboService algoDubboService = DubboUtils.getServiceRef(nodeInfo.getIp(), "com.szubd.rsp.algo.AlgoDubboService");
+        System.out.println(userId);
 
         try {
             algoDubboService.toAlgoLogo(
+                                userId,
                                 algoType,
                                 algoSubSetting,
                                 algoName,
                                 path,
-                                -1,
-                                -1,
-                                -1,
+                                logoAlgoInfos.sparkDynamicAllocationMaxExecutors,
+                                logoAlgoInfos.sparkExecutorMemory,
+                                logoAlgoInfos.sparkExecutorCores,
                                 " "
                    );
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+//        jobLogoService.syncInDB(jobId);
     }
 
     public int uploadNewAlgo(AlgoInfo algoInfo) {

@@ -11,6 +11,8 @@ import com.szubd.rsp.service.job.JobLogoService;
 import com.szubd.rsp.service.job.JobService;
 import com.szubd.rsp.service.node.NacosService;
 import com.szubd.rsp.tools.DubboUtils;
+import com.szubd.rsp.user.UserDubboService;
+import com.szubd.rsp.user.UserInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.hadoop.conf.Configuration;
@@ -53,6 +55,8 @@ public class AlgoService {
     private JobLogoService jobLogoService;
     @Autowired
     private NodeInfoService nodeInfoService;
+    @Autowired
+    private UserDubboService userService;
     @Autowired
     private NacosService nacosService;
     public List<AlgoInfo> list() {
@@ -126,7 +130,9 @@ public class AlgoService {
         String algoName = logoAlgoInfos.algo;
         int nodeId = logoAlgoInfos.getNodeId();
         NodeInfo nodeInfo = nodeInfoService.queryForNodeInfoById(nodeId);
-        String path = nodeInfo.getPrefix() + "localrsp/" + logoAlgoInfos.getSuperName() + "/" + logoAlgoInfos.getName();
+        UserInfo userInfo = userService.queryUserInfo(userId);
+        String path = "/user/" + userInfo.getUserName() + "/dataset/" + logoAlgoInfos.getSuperName();
+//        String path = nodeInfo.getPrefix() + "localrsp/" + logoAlgoInfos.getSuperName() + "/" + logoAlgoInfos.getName();
         AlgoDubboService algoDubboService = DubboUtils.getServiceRef(nodeInfo.getIp(), "com.szubd.rsp.algo.AlgoDubboService");
         System.out.println(userId);
 

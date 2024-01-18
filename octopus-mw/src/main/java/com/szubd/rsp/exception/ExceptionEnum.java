@@ -9,22 +9,23 @@ public enum ExceptionEnum {
     EXPIRED_TOKEN(new TokenException(4002, "Authorization Failed - Expired Authorization")),
     ERR_USER_TOKEN(new TokenException(4003, "Authorization Failed - Error Authorization")),
     NOT_LOGIN_TOKEN(new TokenException(4004, "Authorization Failed - Not Login Token")),
+    NOT_TRUST_TOKEN(new TokenException(4005, "Authorization Failed - JWT signature does not match locally computed signature")),
 
+    // 基本异常
     ERR_PARAMETERS(new BaseException(4005, "Parameters Error : %s")),
     SYSTEM_ERR(new BaseException(500, "Unknown Error")),
+    SERIALIZATION_FAILED(new BaseException(501, "Failed to serialize the file")),
 
 
     // HDFS文件系统异常
     HDFS_FILE_NOT_FOUND(new HDFSException(7001, "HDFS File Not Found : Path=%s")),
     HDFS_FS_CLOSE_ERR(new HDFSException(7002, "Failed to Close HDFS FileSystem")),
     HDFS_FS_GET_ERR(new HDFSException(7003, "Failed to Get HDFS FileSystem")),
-
-
     HDFS_OUTPUT_STREAM_CLOSE_ERR(new HDFSException(7004, "Failed to Close HDFS DataOutputStream")),
     HDFS_OUTPUT_STREAM_GET_ERR(new HDFSException(7005, "Failed to Get HDFS DataOutputStream")),
     HDFS_IO_ERR(new HDFSException(7006, "HDFS IOException Error %s")),
     HDFS_FILE_EXISTED(new HDFSException(7007, "HDFS File Exist : Path=%s")),
-    HDFS_INPUT_STREAM_CLOSE_ERR(new HDFSException(7008, "Failed to Close HDFS DataIntputStream")),;
+    HDFS_INPUT_STREAM_CLOSE_ERR(new HDFSException(7008, "Failed to Close HDFS DataIntputStream"));
 
 
     private final BaseException exception;
@@ -55,7 +56,7 @@ public enum ExceptionEnum {
      * @return
      */
     public static BaseException exception(ExceptionEnum exceptionEnum, Object... objs) {
-        exceptionEnum.exception.setExceptionInfo(String.format(exceptionEnum.exception.getExceptionInfo(), objs));
+        exceptionEnum.exception.setMessage(String.format(exceptionEnum.exception.getExceptionInfo(), objs));
         return exceptionEnum.exception;
     }
 

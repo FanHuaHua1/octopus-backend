@@ -1,20 +1,28 @@
 package com.szubd.rsp.utils;
 
+import com.alibaba.nacos.shaded.com.google.gson.Gson;
+import com.alibaba.nacos.shaded.com.google.gson.JsonObject;
+import com.szubd.rsp.service.user.UserInfoMapper;
+import com.szubd.rsp.service.user.UserService;
 import io.jsonwebtoken.*;
 import org.apache.hadoop.util.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.Timer;
 
 @Component
 public class JwtUtils {
+    @Autowired
+    UserInfoMapper userInfoMapper;
     //签名私钥
     private static final String key = "szubd_LOGO";
     @Value("${token.expiredHour:1}")
@@ -30,6 +38,9 @@ public class JwtUtils {
      * @return
      */
     public String createJwt(String id, String subject, Map<String, Object> map) {
+        //id为userId，通过userId查询数据库，使用密码形式来作为key
+        String finalKey = key + userInfoMapper.getUserPassword(id);
+
         //1、设置失效时间
         long now = System.currentTimeMillis(); //毫秒
         logger.info("Token of user {} created at {}", id, Time.formatTime(now));
@@ -44,7 +55,7 @@ public class JwtUtils {
                 // userName
                 .setSubject(subject)
                 .setIssuedAt(new Date())
-                .signWith(SignatureAlgorithm.HS256, key); //设置签名HS256加密
+                .signWith(SignatureAlgorithm.HS256, finalKey); //设置签名HS256加密
 
         //3、根据map{其他数据}设置claims
         for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -63,14 +74,26 @@ public class JwtUtils {
      * @param token
      * @return
      */
+    public String getUserIdByToken(String token) {
+        String[] split = token.split("\\.");
+        Base64.Decoder decoder = Base64.getDecoder();
+        String s = new String(decoder.decode(split[1]));
+        Gson gson = new Gson();
+        JsonObject payloadJson = gson.fromJson(s, JsonObject.class);
+        String firstValue = payloadJson.entrySet().iterator().next().getValue().getAsString();
+        System.out.println(firstValue);
+        //获得userId
+        return firstValue;
+    }
     public Claims parseJwt(String token) {
         Claims claims;
+        String finalKey = key + userInfoMapper.getUserPassword(getUserIdByToken(token));
         try {
             claims = Jwts.parser()
-                    .setSigningKey(key)
+                    .setSigningKey(finalKey)
                     .parseClaimsJws(token)
                     .getBody();
-        } catch (ExpiredJwtException e) {
+        } catch (Exception e){
             return null;
         }
         return claims;

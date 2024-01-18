@@ -185,37 +185,19 @@ public class AlgoController {
         return ResultResponse.success("OK");
     }
 
-//    资源验证
-    @ResponseBody
-    @PostMapping("/checkresourceslogo")
-    public Result checkResourcesLogo(@RequestBody JSONObject jsonObject) throws Exception{
 
-        int memory = max(jsonObject.getIntValue("sparkExecutorMemory"),2);
-        int cores = max(jsonObject.getIntValue("sparkExecutorCores"),2);
-        int executorNum = max(jsonObject.getIntValue("sparkDynamicAllocationMaxExecutors"),2);
-        int nodeId = jsonObject.getIntValue("nodeId");
-//        System.out.println(jsonObject.toJSONString());
-//        System.out.println(executorNum);
-        boolean valid = jobLogoService.isValid(cores,
-                executorNum,
-                memory,
-                nodeId);
-        if(valid) {
-            return ResultResponse.success("OK");
-        } else {
-            return ResultResponse.failure(PARAMS_IS_INVALID, "资源不足，请耐心等待");
-//            return ResultResponse.success("资源不足，请耐心等待");
-        }
-    }
     @ResponseBody
     @PostMapping("/submitlogo")
     public Result checkFilesLogo(@RequestBody JSONObject jsonObject) throws Exception {
+        String userId = jsonObject.getString("userId");
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         LogoAlgoInfos logoAlgoInfos = mapper.readValue(jsonObject.toJSONString(), LogoAlgoInfos.class);
 //        System.out.println(logoAlgoInfos);
         String algoType = "";
         String algoSubSetting = "";
+        String modelType = logoAlgoInfos.algoType;
+        String model = logoAlgoInfos.algo;
         switch(logoAlgoInfos.algo){
             case "Logistic Regression":{
                 algoType = "clf";
@@ -273,19 +255,7 @@ public class AlgoController {
             logoAlgoInfos.setSparkExecutorCores(2);
         if(logoAlgoInfos.getSparkExecutorMemory() == 0)
             logoAlgoInfos.setSparkExecutorMemory(2);
-//        boolean valid = jobLogoService.isValid(logoAlgoInfos.getSparkExecutorCores(),
-//                logoAlgoInfos.getSparkDynamicAllocationMaxExecutors(),
-//                logoAlgoInfos.getSparkExecutorMemory(),
-//                logoAlgoInfos.getNodeId());
-//        if(valid) {
-//
-//            algoService.submitLogo(logoAlgoInfos, algoType, algoSubSetting, map);
-//            return ResultResponse.success("OK");
-//        } else {
-//            return ResultResponse.failure(PARAMS_IS_INVALID, "资源不足，请耐心等待");
-////            return ResultResponse.success("资源不足，请耐心等待");
-//        }
-        algoService.submitLogo(logoAlgoInfos, algoType, algoSubSetting, map);
+        algoService.submitLogo(userId, logoAlgoInfos, algoType, algoSubSetting, map, modelType, model);
         return ResultResponse.success("OK");
     }
 

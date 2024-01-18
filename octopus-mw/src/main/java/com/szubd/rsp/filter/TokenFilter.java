@@ -43,6 +43,9 @@ public class TokenFilter implements Filter {
         List<String> free_uri_list = new ArrayList<>();
         free_uri_list.add("/v1/user/loginUser");
         free_uri_list.add("/v1/user/registerUser");
+        free_uri_list.add("/v1/user/checkCode");
+        free_uri_list.add("/v1/user/sendEmailCode");
+        free_uri_list.add("/v1/user/resetPwd");
         // 自动放行请求
         if (free_uri_list.contains(request.getRequestURI())) {
             filterChain.doFilter(servletRequest, servletResponse);
@@ -58,6 +61,7 @@ public class TokenFilter implements Filter {
         }
         try {
             authorization = authorization.replace("Bearer ", "");
+            System.out.println("现在的token是" + authorization);
             Boolean isCheck = userService.checkRawToken(authorization);
             if (!isCheck) {
                 ((HttpServletResponse) servletResponse).sendError(500, "UNKNOWN ERROR");

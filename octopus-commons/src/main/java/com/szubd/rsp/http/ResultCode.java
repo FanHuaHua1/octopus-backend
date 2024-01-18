@@ -19,7 +19,13 @@ public enum ResultCode {
     /*用户错误2001-2999*/
     CLUSTERS_NOT_ALIVE(1003, "集群不在线"),
     FILE_DELETE_FAILED(1004, "删除失败"),
-    CONNECT_IS_INVALID(1005,"获取集群信息失败");
+    CONNECT_IS_INVALID(1005,"获取集群信息失败"),
+    Picture_CODE_INVALID(1006,"图形验证码不正确或已经失效"),
+    EMAIL_INVALID(1008,"邮箱验证码不正确"),
+    PWD_CHECK_TWICE_INVALID(1009, "两次输入密码不符"),
+    USERID_NOEXIST(1010, "该学号不存在"),
+    PASSWORD_ERROR(1011, "该学号不存在"),
+    EMAIL_NOEXIST(1007,"尚未绑定邮箱");
 
     private Integer code;
     private String message;

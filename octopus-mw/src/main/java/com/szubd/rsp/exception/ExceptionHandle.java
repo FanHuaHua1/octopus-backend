@@ -22,7 +22,7 @@ public class ExceptionHandle {
         logger.error("Handle TokenException {}", e.toString());
         Result<String> res = new Result<>();
         res.setCode(e.getExceptionCode());
-        res.setMessage(e.getExceptionInfo());
+        res.setMessage(e.getMessage());
         return res;
     }
 
@@ -31,13 +31,22 @@ public class ExceptionHandle {
         logger.error("Handle HDFSException {}", e.toString());
         Result<String> res = new Result<>();
         res.setCode(e.getExceptionCode());
-        res.setMessage(e.getExceptionInfo());
+        res.setMessage(e.getMessage());
         return res;
     }
 
     @ExceptionHandler(BaseException.class)
     public Result handle(BaseException e) {
         logger.error("Handle BaseException {}", e.toString());
+        Result<String> res = new Result<>();
+        res.setCode(e.getExceptionCode());
+        res.setMessage(e.getMessage());
+        return res;
+    }
+
+    @ExceptionHandler(EmailException.class)
+    public Result handle(EmailException e) {
+        logger.error("Handle EmailException {}", e.toString());
         Result<String> res = new Result<>();
         res.setCode(e.getExceptionCode());
         res.setMessage(e.getExceptionInfo());

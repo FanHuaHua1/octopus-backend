@@ -9,9 +9,9 @@
 
     <insert id="insertJobInfo" useGeneratedKeys="true" keyProperty="jobId" parameterType="com.szubd.rsp.job.JobLogoInfo">
         insert into
-            joblogoinfos (job_id, job_name, job_status, job_start_time, job_end_time, job_type, running_host,executors,cores,memory, args, algo_args)
+            joblogoinfos (user_id, job_id, job_name, job_status, job_start_time, job_end_time, job_type, running_host,executors,cores,memory, args, algo_args)
         values
-            (#{jobId}, #{jobName}, #{jobStatus}, #{jobStartTime}, #{jobEndTime}, #{jobType}, #{runningHost},#{executors},#{cores},#{memory}, #{argsJsonString}, #{algoArgsJsonString})
+            (#{userId}, #{jobId}, #{jobName}, #{jobStatus}, #{jobStartTime}, #{jobEndTime}, #{jobType}, #{runningHost},#{executors},#{cores},#{memory}, #{argsJsonString}, #{algoArgsJsonString})
     </insert>
 
     <update id="updateJobInfo" parameterType="com.szubd.rsp.job.JobLogoInfo">

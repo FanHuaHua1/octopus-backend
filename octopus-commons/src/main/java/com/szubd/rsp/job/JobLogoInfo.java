@@ -13,6 +13,7 @@ import java.util.HashMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JobLogoInfo implements Serializable {
+    private String userId;
     private int jobId;
     private String jobName;
     private String jobStatus;
@@ -29,7 +30,8 @@ public class JobLogoInfo implements Serializable {
     private String algoArgsJsonString;
 
 
-    public JobLogoInfo( int jobType,String jobName, String jobStatus) {
+    public JobLogoInfo( String userId, int jobType,String jobName, String jobStatus) {
+        this.userId = userId;
         this.jobName = jobName;
         this.jobStatus = jobStatus;
         this.jobType = jobType;

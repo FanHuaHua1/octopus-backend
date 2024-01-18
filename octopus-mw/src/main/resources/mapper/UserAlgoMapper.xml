@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.szubd.rsp.mapper.UserAlgoMapper">
+<mapper namespace="com.szubd.rsp.service.user.UserAlgoMapper">
 
-    <resultMap id="AlgoInfo" type="com.szubd.rsp.pojo.algoPojo.AlgorithmInfo">
+    <resultMap id="AlgoInfo" type="com.szubd.rsp.user.algoPojo.AlgorithmInfo">
         <id column="id" property="id"/>
         <result column="name" property="name"/>
         <result column="params" property="params"/>

@@ -122,18 +122,17 @@ public class AlgoService {
         jobService.syncInDB(jobId);
     }
 
-    public void submitLogo(AlgoController.LogoAlgoInfos logoAlgoInfos, String algoType, String algoSubSetting, Map<String,String> map) throws URISyntaxException, UnknownHostException {
+    public void submitLogo(String userId, AlgoController.LogoAlgoInfos logoAlgoInfos, String algoType, String algoSubSetting, Map<String,String> map, String modelType, String model) throws URISyntaxException, UnknownHostException {
         String algoName = logoAlgoInfos.algo;
         int nodeId = logoAlgoInfos.getNodeId();
         NodeInfo nodeInfo = nodeInfoService.queryForNodeInfoById(nodeId);
         String path = nodeInfo.getPrefix() + "localrsp/" + logoAlgoInfos.getSuperName() + "/" + logoAlgoInfos.getName();
         AlgoDubboService algoDubboService = DubboUtils.getServiceRef(nodeInfo.getIp(), "com.szubd.rsp.algo.AlgoDubboService");
-        System.out.println(logoAlgoInfos);
-//        String args =
-//        System.out.println(jobId);
+        System.out.println(userId);
 
         try {
             algoDubboService.toAlgoLogo(
+                                userId,
                                 algoType,
                                 algoSubSetting,
                                 algoName,
@@ -141,6 +140,8 @@ public class AlgoService {
                                 logoAlgoInfos.sparkDynamicAllocationMaxExecutors,
                                 logoAlgoInfos.sparkExecutorMemory,
                                 logoAlgoInfos.sparkExecutorCores,
+                                modelType,
+                                model,
                                 " "
                    );
         } catch (Exception e) {

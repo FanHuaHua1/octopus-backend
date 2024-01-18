@@ -4,29 +4,28 @@ public class BaseException extends RuntimeException {
 
     private Integer exceptionCode;
     private String exceptionInfo;
+    private String message;
 
     public BaseException(Integer exceptionCode, String exceptionInfo) {
         this.exceptionCode = exceptionCode;
         this.exceptionInfo = exceptionInfo;
+        this.message = exceptionInfo;
     }
 
     @Override
     public String getMessage() {
-        return exceptionInfo;
+        return message;
     }
 
     public void setExceptionCode(Integer code) {
         this.exceptionCode = code;
     }
     public Integer getExceptionCode() {
-        return exceptionCode;
+        return this.exceptionCode;
     }
 
-    public void setExceptionInfo(String info) {
-        this.exceptionInfo = info;
-    }
     public String getExceptionInfo() {
-        return exceptionInfo;
+        return this.exceptionInfo;
     }
 
 
@@ -35,5 +34,9 @@ public class BaseException extends RuntimeException {
         return "Exception{code = " + exceptionCode +
                 ", info = " + exceptionInfo +
                 "}";
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

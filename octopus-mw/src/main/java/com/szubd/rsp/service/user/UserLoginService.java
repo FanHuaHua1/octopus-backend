@@ -1,12 +1,12 @@
 package com.szubd.rsp.service.user;
 
-import com.szubd.rsp.mapper.UserInfoMapper;
-import com.szubd.rsp.pojo.userPojo.UserInfo;
+import com.szubd.rsp.user.UserInfo;
+import com.szubd.rsp.user.UserLoginDubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserLoginService {
+public class UserLoginService implements UserLoginDubboService {
     @Autowired
     private UserInfoMapper userMapper;
 

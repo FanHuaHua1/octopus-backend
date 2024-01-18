@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.szubd.rsp.mapper.LogMapper">
+<mapper namespace="com.szubd.rsp.service.user.LogMapper">
 
-    <resultMap id="LoginLog" type="com.szubd.rsp.pojo.userPojo.LoginLog">
+    <resultMap id="LoginLog" type="com.szubd.rsp.user.LoginLog">
         <id column="ID" property="id"/>
         <result column="LOGIN_USER_ID" property="loginUserId" />
         <result column="LOGIN_TIME" property="loginTime" />

@@ -50,7 +50,9 @@ public class JobLogoService implements JobDubboLogoService {
 //        }
         //如果可以，往下执行
         int curJobId = ++jobId;
+        logger.info("集群服务准备插入jobId为{}", curJobId);
         jobInfo.setJobId(curJobId);
+
         jobInfoHashMap.put(curJobId, jobInfo);
         Date date = new Date();
         jobInfo.setJobStartTime(dateFormat.format(date));
@@ -75,7 +77,7 @@ public class JobLogoService implements JobDubboLogoService {
         NodeInfo nodeInfo = nodeInfoService.queryForNodeInfoById(nodeId);
         ClusterResourceService clusterResourceService = DubboUtils.getServiceRef(nodeInfo.getIp(), "com.szubd.rsp.resource.ClusterResourceService");
         ClusterMetrics clusterMetricsInfo = clusterResourceService.getClusterMetricsInfo();
-        return !(executors * memory * 1024 >= clusterMetricsInfo.getAvailableMB()) && executors * cores < clusterMetricsInfo.getAvailableVirtualCores();
+        return !((long) executors * memory * 1024 >= clusterMetricsInfo.getAvailableMB()) && executors * cores < clusterMetricsInfo.getAvailableVirtualCores();
     }
 
 

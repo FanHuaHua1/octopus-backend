@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.szubd.rsp.mapper.TokenMapper">
+<mapper namespace="com.szubd.rsp.service.user.TokenMapper">
 
-    <resultMap id="TokenMap" type="com.szubd.rsp.pojo.userPojo.Token">
+    <resultMap id="TokenMap" type="com.szubd.rsp.user.Token">
         <id column="ID" property="id" />
         <result column="USER_ID" property="userId" />
         <result column="TOKEN" property="token" />

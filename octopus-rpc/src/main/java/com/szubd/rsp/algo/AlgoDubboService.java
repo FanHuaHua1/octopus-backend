@@ -12,7 +12,7 @@ public interface AlgoDubboService {
             int executorCores,
             String args) throws Exception;
     void toAlgoLogo(
-
+            String userId,
             String algoType,
             String algoSubSetting,
             String algoName,
@@ -20,5 +20,7 @@ public interface AlgoDubboService {
             int executorNum,
             int executorMemory,
             int executorCores,
+            String modelType,
+            String model,
             String... args) throws Exception;
 }

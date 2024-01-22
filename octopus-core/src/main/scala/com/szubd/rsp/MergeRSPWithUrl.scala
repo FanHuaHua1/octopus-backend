@@ -1,17 +1,26 @@
 package com.szubd.rsp
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.parquet.hadoop.example.GroupReadSupport
+import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Encoders, Row, SparkSession}
+import org.apache.hadoop.fs.Path
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.parquet.example.data.Group
+import org.apache.parquet.example.data.GroupFactory
+import org.apache.parquet.example.data.simple.SimpleGroupFactory
+import org.apache.parquet.hadoop.ParquetReader
+import org.apache.parquet.hadoop.ParquetReader.Builder
+import org.apache.parquet.hadoop.ParquetWriter
+import org.apache.parquet.hadoop.example.GroupReadSupport
+import org.apache.parquet.hadoop.example.GroupWriteSupport
+import org.apache.parquet.schema.MessageType
+import org.apache.parquet.schema.MessageTypeParser
+
 
 import java.net.URI
 
 object MergeRSPWithUrl {
-  val sparkConf: SparkConf = new SparkConf().setMaster("yarn").setAppName("merge")
-  //val sc = new SparkContext(sparkConf)
-  val spark: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+
   def main(args: Array[String]): Unit = {
     assert(args.length == 4, "args.length != 4")
     if(args(3) != "1" && args(3) != "2" && args(3) != "3") {
@@ -21,21 +30,18 @@ object MergeRSPWithUrl {
     val tmpPath = args(0)
     println(args(1))
     val fileListUrl = args(1)
-//    val uri = new URI(fileListUrl)
-//    val conf = new Configuration
-//    val fs = FileSystem.get(uri, conf, "hdfs")
-//    val is: FSDataInputStream = fs.open(new Path(fileListUrl))
-//    val fileListString = scala.io.Source.fromInputStream(is).mkString
-//    is.close()
+    val spark: SparkSession = SparkSession.builder().config(new SparkConf().setMaster("yarn")).getOrCreate()
     val fileListString = spark.read.text(fileListUrl).rdd.first().getString(0)
     println(fileListString)
     val fileList: Array[String] = fileListString.split(":")
-    import  spark.implicits._
+    import spark.implicits._
     val ds = spark.createDataset(fileList)
     //val fileListRdd: RDD[(String, Long)] = sc.makeRDD(fileList).zipWithIndex()
     val fileListRdd: RDD[(String, Long)] = ds.rdd.zipWithIndex()
-    fileListRdd.foreach( fileListElem => {
+    fileListRdd.collect().foreach(println)
+    fileListRdd.foreach(fileListElem => {
       val paths: Array[String] = fileListElem._1.split(",")
+
       var parquetDFArray = new Array[DataFrame](paths.length)
       for (i <- 0 until paths.length) {
         println("path:" + tmpPath + "/" + paths(i))
@@ -52,6 +58,7 @@ object MergeRSPWithUrl {
   }
 
   def readOnce(path: String, fileType: String) : DataFrame = {
+    val spark: SparkSession = SparkSession.builder().config(new SparkConf().setMaster("yarn")).getOrCreate()
     if (fileType == "1") {
       spark.read.parquet(path)
     } else if (fileType == "2") {
@@ -60,4 +67,5 @@ object MergeRSPWithUrl {
       spark.read.text(path)
     }
   }
+
 }

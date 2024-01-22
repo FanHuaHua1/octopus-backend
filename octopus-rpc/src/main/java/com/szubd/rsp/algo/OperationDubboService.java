@@ -7,5 +7,5 @@ public interface OperationDubboService {
 
     void toRspMix(List<String>[] fileList, String father, int jobId, int rspMixParams, String mixType) throws Exception;
     void rspMerge(List<List<String>> fileList, String father, int jobId, int rspMixParams, String mixType) throws Exception;
-    void distcpBeforeMix(List<String> fileList, String father, int jobId, int fatherJobId) throws Exception;
+    void distcpBeforeMix(List<String> fileList, String[] taskList, String father, int jobId, int fatherJobId) throws Exception;
 }

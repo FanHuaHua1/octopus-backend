@@ -144,11 +144,21 @@ public class RSPService {
         }
         ExecutorService es = Executors.newFixedThreadPool(mixNum);
         jobService.endJob(listJobId, "FINISHED");
+        List<List<Pair<Integer, Integer>>> shuffleTaskSeq = getShuffleTaskSeq(nodeIPList.length);
+        String[][] tasks = new String[nodeIPList.length][shuffleTaskSeq.size()];
+        for (int i = 0; i < shuffleTaskSeq.size(); i++){
+            System.out.println("第" + i + "轮：");
+            for (Pair<Integer, Integer> pair : shuffleTaskSeq.get(i)) {
+                System.out.print(pair.getKey() + "->" + pair.getValue() + " ");
+                tasks[pair.getValue()][i] = nodeIPList[pair.getKey()];
+            }
+        }
         //分阶段：
         //第一阶段：先把数据传输完
+
         new Thread(() -> {
             logger.info(" [RSPService (AT ONCE)] Starting transfer across domain");
-            long startTime = System.currentTimeMillis();
+            long startTime = System.nanoTime();
             jobService.createOrUpdateJobCountDown(jobId, finalList.length * 2);
             for (int i = 0; i < finalList.length; i++) {
                 int finalI = i;
@@ -157,20 +167,14 @@ public class RSPService {
                 List<String> totalList = stringStream.collect(Collectors.toList());
                 Runnable runnable = () -> {
                     JobInfo distcpJobInfo = null;
-                    try {
-                        distcpJobInfo = new JobInfo(1, "distcp", "PREPARE", jobId);
-                    } catch (UnknownHostException e) {
-                        throw new RuntimeException(e);
-                    }
+                    distcpJobInfo = new JobInfo(1, "distcp", "PREPARE", nodeIPList[finalI] ,jobId);
                     distcpJobInfo.addArgs("ip", nodeIPList[finalI]);
                     int distcpJobId = jobService.createJob(distcpJobInfo);
-//                    ReferenceConfig<OperationDubboService> referenceConfig = new ReferenceConfig<>();
-//                    referenceConfig.setInterface("com.szubd.rsp.algo.OperationDubboService");
-//                    referenceConfig.setUrl("dubbo://"+nodeIPList[finalI]+":20880/com.szubd.rsp.algo.OperationDubboService");
-//                    OperationDubboService operationDubboService = referenceConfig.get();
                     OperationDubboService operationDubboService = DubboUtils.getServiceRef(nodeIPList[finalI], "com.szubd.rsp.algo.OperationDubboService");
                     try {
-                        operationDubboService.distcpBeforeMix(totalList,
+                        operationDubboService.distcpBeforeMix(
+                                totalList,
+                                tasks[finalI],
                                 fatherName,
                                 distcpJobId,
                                 jobId
@@ -183,13 +187,17 @@ public class RSPService {
             }
             while(jobService.getJobCountDown(jobId) != finalList.length){
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(1);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }
-            long endTime = System.currentTimeMillis();
-            logger.info(" [RSPService (AT ONCE)] Transfer across domain over, duration: {}s", 1.0 * (endTime - startTime) / 1000);
+            double transferDuration = (System.nanoTime() - startTime)  * 0.000000001;;
+            logger.info(" [RSPService (AT ONCE)] Transfer across domain over, duration: {}s", transferDuration);
+            jobService.updateJobArgs(jobId,
+                    "transfer-duration", String.valueOf(transferDuration));
+            jobService.syncInDB(jobId);
+            long transferStartTime = System.nanoTime();
             for (int i = 0; i < finalList.length; i++) {
                 int finalI = i;
                 Runnable runnable = () -> {
@@ -209,12 +217,16 @@ public class RSPService {
             }
             while(jobService.getJobCountDown(jobId) != 0){
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(1);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }
-            logger.info(" [RSPService (AT ONCE)] rsp merge across domain over, duration: {}s", 1.0 * (System.currentTimeMillis() - endTime) / 1000);
+            double mergeDuration = (System.nanoTime() - transferStartTime) * 0.000000001;
+            logger.info(" [RSPService (AT ONCE)] rsp merge across domain over, duration: {}s", mergeDuration);
+            jobService.updateJobArgs(jobId,
+                    "merge-duration", String.valueOf(mergeDuration));
+            jobService.syncInDB(jobId);
         }).start();
     }
 
@@ -409,6 +421,7 @@ public class RSPService {
                         try {
                             operationDubboService.distcpBeforeMix(
                                     paths,
+                                    null,
                                     fatherName,
                                     distcpJobId,
                                     jobId
@@ -607,6 +620,7 @@ public class RSPService {
                         try {
                             operationDubboService.distcpBeforeMix(
                                     paths,
+                                    null,
                                     fatherName,
                                     distcpJobId,
                                     jobId

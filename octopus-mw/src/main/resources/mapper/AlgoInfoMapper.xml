@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.algo.AlgoMapper">
+    <select id="listAllAlgoInfo" resultType="com.szubd.rsp.algo.AlgoInfo">
+        select * from algoinfos
+    </select>
+
+    <insert id="addAlgo" useGeneratedKeys="true" keyProperty="id" parameterType="com.szubd.rsp.algo.AlgoInfo">
+        insert into algoinfos (name, params, type) values (#{name}, #{params}, #{type})
+    </insert>
+</mapper>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.user.UserInfoMapper">
+
+    <sql id="USER_AUTH_QUERY">
+        ID, USER_ID, USER_PASSWORD
+    </sql>
+
+    <sql id="USER_INFO">
+        ID, USER_ID, USER_NAME, EMAIL, WX_ID, USER_PRIVILEGE
+    </sql>
+
+    <resultMap id="userInfoMap" type="com.szubd.rsp.user.UserInfo">
+        <!-- 前一个对应表中名字，后一个对应SQL语句的属性 -->
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="user_name" property="userName" />
+        <result column="user_password" property="userPassword" />
+        <result column="email" property="email" />
+        <result column="wx_id" property="wxId" />
+    </resultMap>
+
+    <select id="checkUserPassword" resultType="boolean">
+        select count(*)
+        from USERS_PRI
+        where user_id = #{userId} and user_password = #{userPassword}
+    </select>
+
+    <select id="queryUserByUserId" resultMap="userInfoMap">
+        select <include refid="USER_INFO"/>
+        from USERS_PRI where user_id = #{userId}
+    </select>
+
+    <sql id="register_params">
+        USER_ID, USER_NAME, USER_PASSWORD, EMAIL, WX_ID, USER_PRIVILEGE
+    </sql>
+
+
+    <insert id="registerUser" useGeneratedKeys="true" keyProperty="id">
+        insert into USERS_PRI(<include refid="register_params"/>, CREATED_TIME)
+        values (#{userId}, #{userName}, #{userPassword}, #{email}, #{wxId}, #{userPrivilege}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="getUserPassword" resultType="java.lang.String">
+        select USER_PASSWORD
+        from USERS_PRI
+        where user_id = #{userId}
+    </select>
+
+    <update id="updatePassword">
+        update USERS_PRI
+        set USER_PASSWORD = #{userPassword}
+        where user_id = #{userId}
+    </update>
+    <update id="updateEmail">
+        update USERS_PRI
+        set EMAIL = #{email}
+        where user_id = #{userId}
+    </update>
+    <select id="getUserPage" parameterType="com.szubd.rsp.user.UserInfo" resultMap="userInfoMap">
+        select
+        <include refid="USER_INFO"/>
+        from USERS_PRI where 1=1
+        <if test="userInfo.userId != null and userInfo.userId != ''"> AND USER_ID = #{userInfo.userId} </if>
+        <if test="userInfo.userName != null and userInfo.userName != ''"> AND USER_NAME like concat('%', #{userInfo.userName}, '%') </if>
+        <if test="userInfo.userPrivilege != null and userInfo.userPrivilege != ''"> AND USER_PRIVILEGE = #{userInfo.userPrivilege} </if>
+    </select>
+    <select id="getUserList" resultMap="userInfoMap">
+        select
+        <include refid="USER_INFO"/>
+        from USERS_PRI where 1=1
+        <if test="id != null and id != ''"> AND ID = #{id} </if>
+        <if test="userId != null and userId != ''"> AND USER_ID = #{userId} </if>
+        <if test="userName != null and userName != ''"> AND USER_NAME like concat('%', #{userName}, '%') </if>
+        <if test="userPrivilege != null and userPrivilege != ''"> AND USER_PRIVILEGE = #{userPrivilege} </if>
+    </select>
+    <update id="updateUser">
+    update USERS_PRI
+    <set>
+        <if test="userName != null and userName != ''"> USER_NAME = #{userName}, </if>
+        <if test="userPassword != null and userPassword != ''"> USER_PASSWORD = #{userPassword}, </if>
+        <if test="email != null and email !='' "> EMAIL = #{email}, </if>
+        <if test="wxId != null "> WX_ID = #{wxId}, </if>
+        <if test="userPrivilege != null and userPrivilege != ''"> USER_PRIVILEGE = #{userPrivilege}, </if>
+    </set>
+    where ID = #{id}
+</update>
+<delete id="delUser"> delete from USERS_PRI where ID=#{id} </delete>
+
+</mapper>

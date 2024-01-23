@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.service.file.global.GlobalRSPInfoMapper">
+    <select id="queryAll" resultType="com.szubd.rsp.file.GlobalRSPInfo">
+        select * from globalrspinfos
+    </select>
+
+    <select id="queryAllFather" resultType="com.szubd.rsp.file.GlobalRSPInfo">
+        select distinct super_name from globalrspinfos
+    </select>
+
+    <select id="querySingle" resultType="com.szubd.rsp.file.GlobalRSPInfo">
+        select * from globalrspinfos where node_id = #{nodeId}
+    </select>
+
+    <select id="queryByName" resultType="com.szubd.rsp.file.GlobalRSPInfo">
+        select * from globalrspinfos where globalrsp_name = #{globalrspName}
+    </select>
+
+    <select id="queryBySuperName" resultType="com.szubd.rsp.file.GlobalRSPInfo">
+        select * from globalrspinfos where super_name = #{superName}
+    </select>
+
+    <select id="listFileDistribution" resultType="com.szubd.rsp.file.GlobalRSPInfo">
+        select distinct node_id from globalrspinfos where super_name = #{superName}
+    </select>
+    <insert id="updateInfos" parameterType="java.util.List">
+        insert into globalrspinfos (super_name, globalrsp_name, blocks, length, avg_block_size, node_id)
+        values
+            <foreach collection="list" item="item" separator=",">
+            (#{item.superName}, #{item.globalrspName}, #{item.blocks}, #{item.length}, #{item.avgBlockSize} ,#{item.nodeId})
+            </foreach>
+        on duplicate key update blocks = VALUES(blocks),length = VALUES(length),avg_block_size = VALUES(avg_block_size)
+    </insert>
+
+
+    <delete id="deleteInfos" parameterType="java.util.List">
+        delete from globalrspinfos where (super_name, globalrsp_name, node_id) in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+             (#{item.superName}, #{item.globalrspName}, #{item.nodeId})
+        </foreach>
+    </delete>
+    <select id="queryAllNameByNodeIdAndFather" resultType="com.szubd.rsp.file.GlobalRSPInfo">
+        select globalrsp_name from globalrspinfos where node_id = #{nodeId} and super_name = #{superName}
+    </select>
+</mapper>

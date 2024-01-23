@@ -1,0 +1,77 @@
+dubbo:
+  application:
+    name: mw
+  protocol:
+    name: dubbo
+    port: 7171
+  registry:
+    address: nacos://172.31.238.116:8848
+    #address: zookeeper://${zookeeper.address:127.0.0.1}:2181
+    #address: zookeeper://${zookeeper.address:43.136.22.7}:2181
+  consumer:
+    timeout: 1000000
+    retries: 0
+server:
+  port: 8084
+  servlet:
+    context-path: /v1
+    session:
+      cookie:
+        http-only: true
+        path: /
+
+
+
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://39.108.187.149:3306/rspdatadb
+    username: rsp
+    password: rsp123456
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 2511841743@qq.com
+    password: rwmodnbfwwrleadj
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+        debug: true
+  servlet:
+    multipart:
+      # 文件上传大小限制【超过上传大小将会抛出异常】
+      # 单文件上传大小
+      max-file-size: 2000MB
+      # 文件上传请求体总大小（多个文件）
+      max-request-size: 2000MB
+
+# Hikari 连接池配置
+hikari:
+  minimum-idle: 3  # 最小空闲连接数量
+  maximum-pool-size: 5  # 连接池最大连接数，默认是10
+  max-lifetime: 1800000  # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+  connection-test-query: SELECT 1
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.szubd.rsp.pojo
+  configuration:
+    map-underscore-to-camel-case: true
+  interceptor:
+    - com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor
+# HDFS 配置
+hdfs:
+  nameNode:
+    url: hdfs://172.31.238.102:8020
+
+#debug: true
+# token 过期配置
+token:
+  expiredHour: 4
+email:
+  sendUserName: 2511841743@qq.com
+

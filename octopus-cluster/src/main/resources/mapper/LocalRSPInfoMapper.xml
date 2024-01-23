@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.mapper.LocalRSPInfoMapper">
+    <insert id="createHDFSFile" parameterType="com.szubd.rsp.file.LocalRSPInfo">
+        insert into localrspinfos (super_name, name, blocks, length, avg_block_size, node_id, is_modified, is_deleted, is_sync)
+        values (#{superName}, #{name}, 0, 0, 0, #{nodeId}, 1, 0, 0)
+    </insert>
+
+    <insert id="insertFile" parameterType="com.szubd.rsp.file.LocalRSPInfo">
+        insert into localrspinfos (super_name, name, blocks, length, avg_block_size, node_id, is_modified, is_deleted, is_sync)
+        values (#{superName}, #{name}, #{blocks}, #{length}, #{avgBlockSize}, #{nodeId}, 1, 0, 0)
+    </insert>
+
+    <insert id="insertFiles" parameterType="java.util.List">
+        insert into localrspinfos (super_name, name, blocks, length, avg_block_size, node_id, is_modified, is_deleted, is_sync) values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.superName}, #{item.name}, #{item.blocks}, #{item.length},#{item.avgBlockSize}, #{item.nodeId}, 1, 0, 0)
+        </foreach>
+    </insert>
+
+    <update id="deleteSonDirectoryTemp" parameterType="com.szubd.rsp.file.LocalRSPInfo">
+        update localrspinfos set is_deleted = 1, is_modified = 1
+        where super_name = #{superName} and name = #{name}
+    </update>
+
+    <delete id="deleteFatherDirectoryTemp">
+        update localrspinfos set is_deleted = 1, is_modified = 1
+        where super_name = #{superName}
+    </delete>
+
+
+    <update id="deleteGrandSonDirectoryTemp" parameterType="com.szubd.rsp.file.LocalRSPInfo">
+        update localrspinfos set is_deleted = 1, is_modified = 1
+        where super_name = #{superName} and name = #{name} and localrsp_name = #{localrspName}
+    </update>
+
+    <update id="updateHDFSFile" parameterType="com.szubd.rsp.file.LocalRSPInfo">
+        update localrspinfos set blocks = #{blocks}, length = #{length}, avg_block_size=#{avgBlockSize}, is_modified = 1
+                        where super_name = #{superName} and name = #{name}
+    </update>
+
+    <select id="queryModifiedLocalRsp" resultType="com.szubd.rsp.file.LocalRSPInfo">
+        select * from localrspinfos where is_modified = 1 and is_deleted = 0
+    </select>
+
+    <select id="queryBySuperName" resultType="com.szubd.rsp.file.LocalRSPInfo">
+        select * from localrspinfos where super_name = #{superName};
+    </select>
+
+    <select id="queryBySuperNameAndName" resultType="com.szubd.rsp.file.LocalRSPInfo">
+        select * from localrspinfos where super_name = #{superName} and name = #{name};
+    </select>
+
+    <select id="queryForDeleted" resultType="com.szubd.rsp.file.LocalRSPInfo">
+        select * from localrspinfos where is_modified = 1 and is_deleted = 1 and is_sync = 1
+    </select>
+
+    <update id="updateModifiedStatus" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE localrspinfos SET is_modified = 0, is_sync = 1 WHERE id=#{item.id}
+        </foreach>
+    </update>
+    <delete id="deleteInfo" parameterType="com.szubd.rsp.file.LocalRSPInfo">
+        delete from localrspinfos where
+                                      super_name = #{superName} and
+                                      name = #{name}
+    </delete>
+    <delete id="updateDeletedStatus" parameterType="java.util.List">
+<!--        <foreach collection="list" item="item" separator=";">-->
+<!--            delete from rspinfos where super_name = #{item.superName} and name = #{item.name}-->
+<!--        </foreach>-->
+        delete from localrspinfos where (super_name, name) in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            (#{item.superName}, #{item.name})
+        </foreach>
+    </delete>
+</mapper>

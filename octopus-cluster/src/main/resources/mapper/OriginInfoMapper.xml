@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.szubd.rsp.mapper.OriginInfoMapper">
+    <insert id="createHDFSFile" parameterType="com.szubd.rsp.file.OriginInfo">
+        insert into rspinfos (super_name, name, blocks, length, avg_block_size, node_id, localrsp_file_num, globalrsp_file_num, is_modified, is_deleted, is_sync)
+        values (#{superName}, #{name}, 0, 0, 0, #{nodeId}, 0, 0, 1, 0, 0)
+    </insert>
+
+    <insert id="insertFile" parameterType="com.szubd.rsp.file.OriginInfo">
+        insert into rspinfos (super_name, name, blocks, length, avg_block_size, node_id, localrsp_file_num, globalrsp_file_num, is_modified, is_deleted, is_sync)
+        values (#{superName}, #{name}, #{blocks}, #{length}, #{avgBlockSize}, #{nodeId}, #{localrspFileNum}, #{globalrspFileNum}, 1, 0, 0)
+    </insert>
+
+    <insert id="insertFiles" parameterType="java.util.List">
+        insert into rspinfos (super_name, name, blocks, length, avg_block_size, node_id, localrsp_file_num, globalrsp_file_num, is_modified, is_deleted, is_sync) values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.superName}, #{item.name}, #{item.blocks}, #{item.length},#{item.avgBlockSize}, #{item.nodeId}, #{item.localrspFileNum}, #{item.globalrspFileNum}, 1, 0, 0)
+        </foreach>
+    </insert>
+
+    <update id="deleteSonDirectoryTemp" parameterType="com.szubd.rsp.file.OriginInfo">
+        update rspinfos set is_deleted = 1, is_modified = 1
+        where super_name = #{superName} and name = #{name}
+    </update>
+
+    <delete id="deleteFatherDirectory">
+        delete from rspinfos where super_name = #{superName}
+    </delete>
+
+    <delete id="deleteFatherDirectoryTemp">
+        update rspinfos set is_deleted = 1, is_modified = 1
+        where super_name = #{superName}
+    </delete>
+
+    <update id="updateHDFSFile" parameterType="com.szubd.rsp.file.OriginInfo">
+        update rspinfos set blocks = #{blocks}, length = #{length}, avg_block_size=#{avgBlockSize}, is_modified = 1
+                        where super_name = #{superName} and name = #{name}
+    </update>
+
+    <update id="updateFileByName">
+        update rspinfos set super_name = #{oriSuperName}, name = #{dstName}, is_modified = 1
+                        where super_name = #{oriSuperName} and name = #{oriName}
+    </update>
+
+    <update id="updateFileBySuperName">
+        update rspinfos set super_name = #{oriSuperName}, is_modified = 1
+                        where super_name = #{oriSuperName}
+    </update>
+
+    <select id="queryAll" resultType="com.szubd.rsp.file.OriginInfo">
+        select * from rspinfos
+    </select>
+
+    <select id="queryForModified" resultType="com.szubd.rsp.file.OriginInfo">
+        select * from rspinfos where is_modified = 1 and is_deleted = 0
+    </select>
+
+    <select id="queryBySuperName" resultType="com.szubd.rsp.file.OriginInfo">
+        select * from rspinfos where super_name = #{superName};
+    </select>
+
+    <select id="queryBySuperNameAndName" resultType="com.szubd.rsp.file.OriginInfo">
+        select * from rspinfos where super_name = #{superName} and name = #{name};
+    </select>
+
+    <select id="queryForDeleted" resultType="com.szubd.rsp.file.OriginInfo">
+        select * from rspinfos where is_modified = 1 and is_deleted = 1 and is_sync = 1
+    </select>
+
+    <update id="updateModifiedStatus" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE rspinfos SET is_modified = 0, is_sync = 1 WHERE id=#{item.id}
+        </foreach>
+    </update>
+
+    <delete id="updateDeletedStatus" parameterType="java.util.List">
+<!--        <foreach collection="list" item="item" separator=";">-->
+<!--            delete from rspinfos where super_name = #{item.superName} and name = #{item.name}-->
+<!--        </foreach>-->
+        delete from rspinfos where (super_name, name) in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+             (#{item.superName}, #{item.name})
+        </foreach>
+    </delete>
+
+    <delete id="deleteInfo" parameterType="com.szubd.rsp.file.OriginInfo">
+        delete from rspinfos where
+                                      super_name = #{superName} and
+                                      name = #{name}
+    </delete>
+</mapper>

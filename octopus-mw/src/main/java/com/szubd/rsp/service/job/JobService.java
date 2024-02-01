@@ -114,6 +114,16 @@ public class JobService implements JobDubboService {
     }
 
     @Override
+    public JobInfo getJobInfoById(int id) {
+        return jobInfoMapper.getJobInfoById(id);
+    }
+
+    @Override
+    public List<JobInfo> getJobInfosByParentId(int id) {
+        return jobInfoMapper.getJobInfosByParentId(id);
+    }
+
+    @Override
     public int endJob(int jobId, String jobStatus) {
         logger.info("id: {}, end status: {}", jobId , jobStatus);
         JobInfo jobInfo = jobInfoHashMap.get(jobId);

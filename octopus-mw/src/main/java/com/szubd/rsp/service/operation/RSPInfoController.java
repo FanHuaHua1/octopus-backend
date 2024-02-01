@@ -59,7 +59,7 @@ public class RSPInfoController {
     }
 
     @ResponseBody
-    @PostMapping("/torspmix")
+    //@PostMapping("/torspmix")
     public Result toRspMix(@RequestBody JSONObject jsonObject) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -95,5 +95,28 @@ public class RSPInfoController {
         }
         return ResultResponse.success();
     }
+
+    @ResponseBody
+    @PostMapping("/torspmix")
+    public Result exp1colTime(@RequestBody JSONObject jsonObject) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // 使用 TypeReference 来指定泛型类型
+        TypeReference<RspMixParams<LocalRSPInfo>> typeReference = new TypeReference<RspMixParams<LocalRSPInfo>>() {};
+        RspMixParams<LocalRSPInfo> rspMixParams = mapper.readValue(jsonObject.toJSONString(), typeReference);
+        logger.info("RSP混洗参数： {}", rspMixParams);
+        double total = Double.parseDouble(rspMixParams.blockRatio.split(":")[0]);
+        logger.info("传输数据：{}g", total);
+        int realBlockNumOne = (int)Math.floor(total * 9 / 19 * 8);
+        int realBlockNumTwo = (int)Math.floor(total * 6 / 19 * 8);
+        int realBlockNumThree = (int)Math.floor(total * 4 / 19 * 8);
+        rspMixParams.blockRatio = realBlockNumOne + ":" + realBlockNumTwo + ":" + realBlockNumThree;
+        logger.info("RSP混洗参数： {}", rspMixParams);
+        if (!rspMixParams.data.isEmpty()){
+            rspService.collectExp(rspMixParams);
+        }
+        return ResultResponse.success();
+    }
+
 
 }

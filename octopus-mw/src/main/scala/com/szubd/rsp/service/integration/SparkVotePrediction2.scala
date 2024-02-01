@@ -18,10 +18,10 @@ import scala.collection.mutable.{Map => MutablMap}
  * @Date 2023/11/25 15:22
  * @desc
  */
-object SparkVotePrediction {
+object SparkVotePrediction2 {
   private val predictBlockPath = "/home/zhaolingxiang/octopus-code/clfTestBlock.parquet2"
   //def run[M <: LogoClassifier[M]](modelRdd: RDD[(M, Double)], algo:String): Unit = {
-  def run[M <: LogoClassifier[M]](modelS: List[(SoftClassifier[_ >: Tuple with Array[Double]], Double)], algo:String): String = {
+  def run[M <: LogoClassifier[M]](modelPath:List[String], algo:String): String = {
     val sparkconf = new SparkConf().setAppName("Test_Smile").setMaster("local[*]")
       .set("spark.dynamicAllocation.minExecutors", "1")
       .set("spark.dynamicAllocation.enabled", "true")
@@ -31,18 +31,53 @@ object SparkVotePrediction {
       .config(sparkconf)
       .getOrCreate()
     println("------------环境配置成功---------------")
+    //part1 - 数据传输
+    val time1 = System.currentTimeMillis()
+//    val rdd: RDD[(Any, Double)] = sc.objectFile(path)
+    val sc = spark.sparkContext
+    val rdd1 = sc.objectFile(modelPath(0))
+    val rdd2 = sc.objectFile(modelPath(1))
+    val rdd3 = sc.objectFile(modelPath(2))
+    val modelRdd = rdd1.union(rdd2).union(rdd3).asInstanceOf[RDD[(Any, Double)]]
+    val modelCount = modelRdd.getNumPartitions
+    val count = modelRdd.count()
+    val time2 = System.currentTimeMillis()
+    val time1Str = ((time2 - time1) * 0.001).formatted("%.2f")
+    //part2 - go
+    algo match {
+        case "RF" => modelRdd.asInstanceOf[RDD[(RandomForest, Double)]]
+        case "DT" => modelRdd.asInstanceOf[RDD[(DecisionTree, Double)]]
+        case "LR" => modelRdd.asInstanceOf[RDD[(LogisticRegression, Double)]]
+      }
+      val factors = modelRdd.map(_._2).collect().sorted
+      val mcount = modelCount
+      printf("Model count: %d\n", mcount)
+      var tcount = (mcount * 0.05).toInt
+      if (tcount < 1) {
+        tcount = 1
+      }
+      printf("Tail count: %d\n", tcount)
+      val (minAcc, maxAcc) = (factors(tcount), factors(mcount - tcount - 1))
+      printf("Score range: (%f, %f)\n", minAcc, maxAcc)
+    val valuedModels = modelRdd.filter(item => minAcc <= item._2 && item._2 <= maxAcc).map(item => (item._1, item._2))
+    val count3 = valuedModels.count()
+    val time3 = System.currentTimeMillis()
+    val time2Str = ((time3 - time2) * 0.001).formatted("%.2f")
+    //part3 - predict
     val frame = spark.rspRead.parquet(predictBlockPath)
-    val modelRdd: RDD[(SoftClassifier[_ >: Tuple with Array[Double]], Double)] = spark.sparkContext.makeRDD(modelS)
     val predictWithIndex: RDD[((Array[Int], Array[Array[Double]]), Long)] = BasicWrappers.toMatrixRDD(frame.rdd).zipWithIndex()
     val predicts = predictWithIndex.map(item => (item._2, item._1, item._1._1.length))
-    val prediction = algo match {
-      case "LR" => modelRdd.cartesian(predicts).map(
+    valuedModels.cartesian(predicts).map(
         item => (item._2._1, new LogisticRegression().predictor(item._1._1.asInstanceOf[smileLR], item._2._2._2))
       ).groupBy(_._1)
-      case "RF" => modelRdd.cartesian(predicts).map(
+    val prediction = algo match {
+      case "LR" => valuedModels.cartesian(predicts).map(
+        item => (item._2._1, new LogisticRegression().predictor(item._1._1.asInstanceOf[smileLR], item._2._2._2))
+      ).groupBy(_._1)
+      case "RF" => valuedModels.cartesian(predicts).map(
         item => (item._2._1, new RandomForest().predictor(item._1._1.asInstanceOf[smileRF], item._2._2._2))
       ).groupBy(_._1)
-      case "DT" => modelRdd.cartesian(predicts).map(
+      case "DT" => valuedModels.cartesian(predicts).map(
         item => (item._2._1, new DecisionTree().predictor(item._1._1.asInstanceOf[smileDT], item._2._2._2))
       ).groupBy(_._1)
     }
@@ -54,8 +89,13 @@ object SparkVotePrediction {
     )
     val acc = rspAcc.map(item => item._1 * item._2).sum / rspAcc.map(_._2).sum
     printf("Accuracy: %.4f\n", acc)
-    return acc.formatted("%.4f")
+    val time4 = System.currentTimeMillis()
+    val time3Str = ((time4 - time3) * 0.001).formatted("%.2f")
+    time1Str + " " + time2Str + " " + time3Str + " " + acc.formatted("%.4f")
   }
+
+
+
 
   def votePrediction(param: (Long, (Iterable[(Long, Array[Int])], Int))): (Long, Array[Int]) = {
     val labels = param._2._1.map(_._2).toArray

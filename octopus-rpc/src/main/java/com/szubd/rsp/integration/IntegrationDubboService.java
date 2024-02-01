@@ -8,5 +8,6 @@ package com.szubd.rsp.integration;
 public interface IntegrationDubboService {
 
     void recordModels(int jobId, Object models);
+    void recordModelPaths(int jobId, String Path);
     void checkAndIntegrate(int jobId, String algoType, String algoName, String args);
 }

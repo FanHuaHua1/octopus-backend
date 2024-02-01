@@ -82,14 +82,15 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
                                 long loTimeConsuming = System.nanoTime() - startTime;
                                 long modelsTransferStartTime = System.nanoTime();
                                 Object models = IntegrationUtils.getModels(path, algoType, algoName);
-                                integrationDubboService.recordModels(subAlgoJobId, models);
+                                //integrationDubboService.recordModels(subAlgoJobId, models);
+                                integrationDubboService.recordModelPaths(subAlgoJobId, path);
                                 //禁止输出长log
                                 jobDubboService.updateMultiJobArgs(subAlgoJobId,
                                         "数据集", filename,
                                         "日志", yarnLog,
                                         "ip", constant.ip,
-                                        "loTimeConsuming", loTimeConsuming * 0.000000001 + "s",
-                                        "modelsTransferTimeConsuming", (System.nanoTime() - modelsTransferStartTime) * 0.000000001 + "s"
+                                        "loTimeConsuming", String.format("%.2f",loTimeConsuming * 0.000000001),
+                                        "modelsTransferTimeConsuming", String.format("%.2f",(System.nanoTime() - modelsTransferStartTime) * 0.000000001)
                                 );
                                 jobDubboService.endSubJob(subAlgoJobId, handle.getState().toString());
                                 integrationDubboService.checkAndIntegrate(subAlgoJobId, algoType, algoName, args);
@@ -169,6 +170,7 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
                             executorCores + " - args:" + String.join(" ", args))
                 .setMaster("yarn")
                 .setDeployMode("cluster")
+                //.setDeployMode("client")
                 .setConf("spark.eventLog.enabled", "true")
                 .setConf("spark.dynamicAllocation.minExecutors", "1")
                 .setConf("spark.dynamicAllocation.enabled", "true")
@@ -194,15 +196,19 @@ public class AlgoDubboServiceImpl implements AlgoDubboService {
                 sparkLauncher.addAppArgs(arg);
             }
         }
-        if(!"-1".equals(executorNum)){
-            sparkLauncher.setConf("spark.dynamicAllocation.maxExecutors",  executorNum);
-        }
-        if(!"-1".equals(executorMemory)){
-            sparkLauncher.setConf("spark.executor.memory",  executorMemory + "g");
-        }
-        if(!"-1".equals(executorCores)){
-            sparkLauncher.setConf("spark.executor.cores",  executorCores);
-        }
+//        if(!"-1".equals(executorNum)){
+//            sparkLauncher.setConf("spark.dynamicAllocation.maxExecutors",  executorNum);
+//        }
+//        if(!"-1".equals(executorMemory)){
+//            sparkLauncher.setConf("spark.executor.memory",  executorMemory + "g");
+//        }
+//        if(!"-1".equals(executorCores)){
+//            sparkLauncher.setConf("spark.executor.cores",  executorCores);
+//        }
+        sparkLauncher.setConf("spark.executor.memory",  "12g");
+        sparkLauncher.setConf("spark.executor.cores",  "3");
+        //sparkLauncher.setConf("spark.executor.memoryOverhead",  "250");
+
 //        switch (algoType) {
 //            //0.05 1 0.05 1 50 405 405 405
 //            case "clf" :

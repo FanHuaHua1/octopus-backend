@@ -175,9 +175,11 @@ public class AlgoController {
         }
         Map<String, String> map = (Map<String, String>) JSON.parse(algoInfos.algoParams);
         logger.info("args map: {}", map);
-        algoService.submit(algoInfos, algoType, algoSubSetting, map);
+        //algoService.submit(algoInfos, algoType, algoSubSetting, map);
+        algoService.submitExp(algoInfos, algoType, algoSubSetting, map);
         return ResultResponse.success("OK");
     }
+
 
     @ResponseBody
     @PostMapping("/submitlogo")

@@ -16,6 +16,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,7 @@ public class AlgoService {
         jobInfo.addArgs("testRatio", String.valueOf(testRatio));
         jobInfo.addArgs("algoType", algoType);
         jobInfo.addArgs("algoSubSetting", algoSubSetting);
+        jobInfo.addArgs("totalLoStartTime", System.currentTimeMillis() + "");
         jobInfo.addArgs("ip", Inet4Address.getLocalHost().getHostAddress());
         map.forEach(jobInfo::addAlgoArgs);
         int jobId = jobService.createCombineJob(jobInfo,subJobNum);
@@ -117,6 +119,130 @@ public class AlgoService {
         jobService.addJobArgs(jobId, "nodeIPList", StringUtils.join(':', nodeIPList));
         jobService.syncInDB(jobId);
     }
+
+    /**
+     * 实验用
+     * @param algoInfos
+     * @param algoType
+     * @param algoSubSetting
+     * @param map
+     * @throws URISyntaxException
+     * @throws UnknownHostException
+     */
+    public void submitExp(AlgoController.AlgoInfos algoInfos, String algoType, String algoSubSetting, Map<String,String> map) throws Exception {
+        String algoName = algoInfos.algo;
+        double trainRatio = algoInfos.trainRatio;
+        double testRatio = algoInfos.testRatio;
+        int subJobNum = algoInfos.data.size();
+        String[] executorsParamsList = algoInfos.executorsParams.split(",");
+        String[] expParamsList = algoInfos.expParams.split(",");
+        //double[][] round = new double[3][2];
+        double[][] round = new double[3][23];
+//        for(int i = 1; i <= 2; i++) {
+//            round[0][i - 1] = i * 1.0 * 100 * 9 / 19;
+//            round[1][i - 1] = i * 1.0 * 100 * 6 / 19;
+//            round[2][i - 1] = i * 1.0 * 100 * 4 / 19;
+//        }
+        round[0][0] = 100 * 9 / 19;
+        round[1][0] = 100 * 6 / 19;
+        round[2][0] = 100 * 4 / 19;
+//        round[0][1] = 20000 * 1.0 * 9 / 19;
+//        round[1][1] = 20000 * 1.0 * 6 / 19;
+//        round[2][1] = 20000 * 1.0 * 4 / 19;
+//        round[0][2] = 30000 * 1.0 * 9 / 19;
+//        round[1][2] = 30000 * 1.0 *  6 / 19;
+//        round[2][2] = 30000 * 1.0 *  4 / 19;
+        for(int i = 1; i <= 9; i++) {
+            round[0][i] = i * 1.0 * 100 * 9 / 19;
+            round[1][i] = i * 1.0 * 100 * 6 / 19;
+            round[2][i] = i * 1.0 * 100 * 4 / 19;
+        }
+        for(int i = 1; i <= 9; i++) {
+            round[0][i+ 9] = i * 1.0 * 1000 * 9 / 19;
+            round[1][i+ 9] = i * 1.0 * 1000 * 6 / 19;
+            round[2][i+ 9] = i * 1.0 * 1000 * 4 / 19;
+        }
+        for(int i = 1; i <= 4; i++) {
+            round[0][i+ 18] = i * 1.0 * 10000 * 9 / 19;
+            round[1][i+ 18] = i * 1.0 * 10000 * 6 / 19;
+            round[2][i+ 18] = i * 1.0 * 10000 * 4 / 19;
+        }
+//        for(int i = 1; i <= 3; i++) {
+//            round[0][i - 1] = (i + 1) * 1.0 * 10000 * 9 / 19;
+//            round[1][i - 1] = (i + 1) * 1.0 * 10000 * 6 / 19;
+//            round[2][i - 1] = (i + 1) * 1.0 * 10000 * 4 / 19;
+//        }
+//        String[] roundArr = Arrays.stream(round).mapToObj(i -> String.valueOf(i)).toArray(String[]::new);
+//        System.out.println(StringUtils.join(',', roundArr));
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                for(int j = 0; j < round[0].length; j++){
+                    JobInfo jobInfo = null;
+                    try {
+                        jobInfo = new JobInfo(3, algoName, "RUNNING");
+                    } catch (UnknownHostException e) {
+                        throw new RuntimeException(e);
+                    }
+                    jobInfo.addArgs("trainRatio", String.valueOf(trainRatio));
+                    jobInfo.addArgs("testRatio", String.valueOf(testRatio));
+                    jobInfo.addArgs("algoType", algoType);
+                    jobInfo.addArgs("algoSubSetting", algoSubSetting);
+                    jobInfo.addArgs("totalLoStartTime", System.currentTimeMillis() + "");
+                    map.forEach(jobInfo::addAlgoArgs);
+                    int jobId = jobService.createCombineJob(jobInfo,subJobNum);
+                    jobService.createOrUpdateJobCountDown(jobId, 1);
+                    //配置文件
+                    String[] nodeIPList = new String[subJobNum];
+                    ExecutorService es = Executors.newFixedThreadPool(subJobNum);
+                    for (int i = 0; i < subJobNum; i++) {
+                        //TODO:补充校验
+                        int[] curExecutorsParams = Arrays.stream(executorsParamsList[i].split(" ")).mapToInt(Integer::parseInt).toArray();
+                        String curExpParams = expParamsList[i];
+                        int nodeId = algoInfos.data.get(i).getNodeId();
+                        NodeInfo nodeInfo = nodeInfoService.queryForNodeInfoById(nodeId);
+                        nodeIPList[i] = nodeInfo.getNameNodeIP();
+                        String path = nodeInfo.getPrefix() + "globalrsp/" + algoInfos.data.get(i).getSuperName() + "/" + algoInfos.data.get(i).getGlobalrspName();
+                        int finalJ = j;
+                        int finalI = i;
+                        Runnable runnable = new Runnable() {
+                            @Override
+                            public void run() {
+                                AlgoDubboService algoDubboService = DubboUtils.getServiceRef(nodeInfo.getIp(), "com.szubd.rsp.algo.AlgoDubboService");
+                                logger.info("发起调用，目标地址：{}， 目标服务：{}", nodeInfo.getIp(), "com.szubd.rsp.algo.AlgoDubboService");
+                                try {
+                                    algoDubboService.toAlgo(
+                                            jobId,
+                                            algoType,
+                                            algoSubSetting,
+                                            algoName,
+                                            path,
+                                            curExecutorsParams[0],
+                                            curExecutorsParams[1],
+                                            curExecutorsParams[2],
+                                            curExpParams + " " + String.format("%.2f", round[finalI][finalJ]));
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        };
+                        es.execute(runnable);
+                    }
+                    jobService.addJobArgs(jobId, "nodeIPList", StringUtils.join(':', nodeIPList));
+                    jobService.syncInDB(jobId);
+                    while(jobService.getJobCountDown(jobId) != 0){
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+        };
+        new Thread(runnable).start();
+    }
+
 
     public void submitLogo(AlgoController.LogoAlgoInfos logoAlgoInfos, String algoType, String algoSubSetting, Map<String,String> map) throws URISyntaxException, UnknownHostException {
         String algoName = logoAlgoInfos.algo;

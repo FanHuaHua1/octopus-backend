@@ -1,5 +1,7 @@
 package com.szubd.rsp.job;
 
+import java.util.List;
+
 public interface JobDubboService {
     int updateJobStatus(int jobId, String jobStatus);
 
@@ -18,6 +20,10 @@ public interface JobDubboService {
     int endSubJob(int mvJobId, String jobStatus);
 
     int syncInDB(int jobId);
+
+    JobInfo getJobInfoById(int id);
+
+    List<JobInfo> getJobInfosByParentId(int id);
 
     void createOrUpdateJobCountDown(int jobId, int count);
 

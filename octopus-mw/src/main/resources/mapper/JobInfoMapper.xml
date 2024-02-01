@@ -9,7 +9,7 @@
 
     <insert id="insertJobInfo" useGeneratedKeys="true" keyProperty="jobId" parameterType="com.szubd.rsp.job.JobInfo">
         insert into
-            jobinfos (job_id, job_name, job_status, job_start_time, job_end_time, job_type, sub_job_num, parent_job_id, running_host, args, algo_args)
+            jobinfos (job_id, job_name, job_status, job_start_time, job_end_time, job_type, sub_job_num, parent_job_id, running_host, args_json_string, algo_args_json_string)
         values
             (#{jobId}, #{jobName}, #{jobStatus}, #{jobStartTime}, #{jobEndTime}, #{jobType}, #{subJobNum}, #{parentJobId}, #{runningHost}, #{argsJsonString}, #{algoArgsJsonString})
     </insert>
@@ -17,13 +17,21 @@
     <update id="updateJobInfo" parameterType="com.szubd.rsp.job.JobInfo">
         update jobinfos
         <set>
-            job_status = #{jobStatus}, job_end_time = #{jobEndTime}, running_host = #{runningHost}, args = #{argsJsonString}, algo_args = #{algoArgsJsonString}
+            job_status = #{jobStatus}, job_end_time = #{jobEndTime}, running_host = #{runningHost}, args_json_string = #{argsJsonString}, algo_args_json_string = #{algoArgsJsonString}
         </set>
         where job_id = #{jobId}
     </update>
 
     <select id="getAvaliableJobId" resultType="java.lang.Integer">
         select max(job_id) from jobinfos
+    </select>
+
+    <select id="getJobInfoById"  parameterType="java.lang.Integer"  resultType="com.szubd.rsp.job.JobInfo">
+        select * from jobinfos where job_id = #{id}
+    </select>
+
+    <select id="getJobInfosByParentId"  parameterType="java.lang.Integer"  resultType="com.szubd.rsp.job.JobInfo">
+        select * from jobinfos where parent_job_id = #{id}
     </select>
 
 </mapper>

@@ -12,6 +12,7 @@ public interface JobInfoMapper {
     List<JobInfo> listAllJobInfo();
     int insertJobInfo(JobInfo jobInfo);
     int updateJobInfo(JobInfo jobInfo);
-
     int getAvaliableJobId();
+    JobInfo getJobInfoById(int id);
+    List<JobInfo> getJobInfosByParentId(int id);
 }

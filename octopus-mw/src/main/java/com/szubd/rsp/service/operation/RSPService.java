@@ -230,6 +230,152 @@ public class RSPService {
         }).start();
     }
 
+    /**
+     * 实验用
+     * @param rspMixParams
+     * @throws URISyntaxException
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public void collectExp(RspMixParams<LocalRSPInfo> rspMixParams) throws URISyntaxException, IOException, InterruptedException {
+        //混洗的节点数
+        int mixNum = rspMixParams.data.size();
+        //最终GlobalRsp的内层名字
+        String fatherName = rspMixParams.data.get(0).getSuperName() + "-" + System.currentTimeMillis();
+        JobInfo jobInfo = new JobInfo(2, "mixRsp", "RUNNING");
+        jobInfo.addMultiArgs(
+                "mixNum", String.valueOf(mixNum),
+                "ratio", String.valueOf(rspMixParams.blockRatio),
+                "fatherName", rspMixParams.data.get(0).getSuperName(),
+                "ip", Inet4Address.getLocalHost().getHostAddress()
+        );
+        int jobId = jobService.createCombineJob(jobInfo, rspMixParams.data.size());
+        JobInfo listJobInfo = new JobInfo(1, "generateList", "RUNNING", jobId);
+        int listJobId = jobService.createJob(listJobInfo);
+        //混洗节点块数,如2:2
+        int[] ratioList = Arrays.stream(rspMixParams.blockRatio.split(":")).mapToInt(Integer::parseInt).toArray();
+        assert ratioList.length == mixNum;
+        //sum：混洗总块数 对于2:2 sum = 4
+        int sum = Arrays.stream(ratioList).sum();
+        //downLoadList:为每个块建立一个下载列表？
+        ArrayList[] downLoadList = new ArrayList[sum];
+        for (int i = 0; i < downLoadList.length; i++) {
+            downLoadList[i] = new ArrayList<>();
+        }
+        String[] nodeIPList = new String[mixNum];
+        //配置文件
+        Configuration conf =  new Configuration();
+        String user = "bigdata";
+        //假设三个文件（包含多个块）进行混洗，则循环三次
+        for (int i = 0; i < rspMixParams.data.size(); i++) {
+            //这份数据的节点id
+            int nodeId = rspMixParams.data.get(i).getNodeId();
+            //这份数据的块数
+            int blockNum = rspMixParams.data.get(i).getBlocks();
+            //这份数据的节点信息
+            NodeInfo nodeInfo = nodeInfoService.queryForNodeInfoById(nodeId);
+            //这份数据的节点ip
+            nodeIPList[i] = nodeInfo.getIp();
+            //构造这份数据的FileStatus
+            String url = "hdfs://" + nodeInfo.getNameNodeIP() + ":8020";
+            String path = nodeInfo.getPrefix() + "localrsp/" + rspMixParams.data.get(i).getSuperName() + "/" + rspMixParams.data.get(i).getName();
+            URI uri = new URI(url);
+            FileSystem fileSystem = FileSystem.get(uri, conf, user);
+            FileStatus[] fileStatuses = fileSystem.listStatus(new Path(path));
+            //fileShuffleList：这份文件所有块的HDFS文件信息
+            List<FileStatus> fileShuffleList = Arrays.asList(fileStatuses);
+            assert fileShuffleList.size() >= sum;
+            //打乱数据列表
+            Collections.shuffle(fileShuffleList);
+            //k是用来防止fileShuffleList中有0字节的文件（如标志文件SUCCESS_）
+            //j是用来遍历fileShuffleList
+            //结束之后，downLoadList[i]中都会有各个文件的一个块
+            //***********************************************
+            //这里的思想是，把每一个文件的块打乱之后，分别先放一个到downLoadList[i]中
+            //这样，每个downLoadList[i]都是一个全局RSP块，里面是各个文件块叠加的，后续要合成一个文件，并且考虑到大小问题，要进行重新分区
+            for (int j = 0, k = 0; k < sum; j++, k++) {
+                FileStatus fileStatus = fileShuffleList.get(j);
+                if(fileStatus.getLen() == 0){
+                    k--;
+                    continue;
+                }
+                //为每个下载列表添加一个文件?
+                downLoadList[k].add(fileStatus.getPath().toString());
+            }
+        }
+        jobService.addJobArgs(jobId, "nodeIPList", StringUtils.join(':', nodeIPList));
+        jobService.syncInDB(jobId);
+        List<String>[][] finalList = new ArrayList[mixNum][];
+        int startBound = 0;
+        for (int i = 0; i < finalList.length; i++) {
+            finalList[i] = new ArrayList[ratioList[i]];
+            //k是记录downLoadList分配到哪个索引了，比如2:2分配，索引0到1会给到ip1，2-4会给到ip2
+            for (int k = startBound; k < startBound + ratioList[i]; k++) {
+                finalList[i][k - startBound] = downLoadList[k];
+            }
+            startBound += ratioList[i];
+        }
+        ExecutorService es = Executors.newFixedThreadPool(mixNum);
+        jobService.endJob(listJobId, "FINISHED");
+        List<List<Pair<Integer, Integer>>> shuffleTaskSeq = getShuffleTaskSeq(nodeIPList.length);
+        String[][] tasks = new String[nodeIPList.length][shuffleTaskSeq.size()];
+        for (int i = 0; i < shuffleTaskSeq.size(); i++){
+            System.out.println("第" + i + "轮：");
+            for (Pair<Integer, Integer> pair : shuffleTaskSeq.get(i)) {
+                System.out.print(pair.getKey() + "->" + pair.getValue() + " ");
+                tasks[pair.getValue()][i] = nodeIPList[pair.getKey()];
+            }
+        }
+        //分阶段：
+        //第一阶段：先把数据传输完
+
+        new Thread(() -> {
+            logger.info(" [RSPService (AT ONCE)] Starting transfer across domain");
+            long startTime = System.nanoTime();
+            jobService.createOrUpdateJobCountDown(jobId, 1);
+            for (int i = 0; i < finalList.length; i++) {
+                int finalI = i;
+                if(!"192.168.0.67".equals(nodeIPList[finalI])){
+                    continue;
+                }
+                Stream<String> stringStream = Arrays.stream(finalList[finalI]).flatMap(List::stream);
+                //Stream<String> stringStream = fileList.stream().flatMap(List::stream);
+                List<String> totalList = stringStream.collect(Collectors.toList());
+                Runnable runnable = () -> {
+                    JobInfo distcpJobInfo = null;
+                    distcpJobInfo = new JobInfo(1, "distcp", "PREPARE", nodeIPList[finalI] ,jobId);
+                    distcpJobInfo.addArgs("ip", nodeIPList[finalI]);
+                    int distcpJobId = jobService.createJob(distcpJobInfo);
+                    OperationDubboService operationDubboService = DubboUtils.getServiceRef(nodeIPList[finalI], "com.szubd.rsp.algo.OperationDubboService");
+                    try {
+                        operationDubboService.distcpBeforeMix(
+                                totalList,
+                                tasks[finalI],
+                                fatherName,
+                                distcpJobId,
+                                jobId
+                        );
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                };
+                es.execute(runnable);
+            }
+            while(jobService.getJobCountDown(jobId) != 0){
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            double transferDuration = (System.nanoTime() - startTime)  * 0.000000001;;
+            logger.info(" [RSPService (AT ONCE)] Transfer across domain over, duration: {}s", transferDuration);
+            jobService.updateJobArgs(jobId,
+                    "transfer-duration", String.valueOf(transferDuration));
+            jobService.syncInDB(jobId);
+        }).start();
+    }
+
     private List<List<Pair<Integer, Integer>>> getShuffleTaskSeq(int len){
         List<List<Pair<Integer, Integer>>> arr_out = new ArrayList<>();
         for (int i = 0; i < len / 2; i++) {
